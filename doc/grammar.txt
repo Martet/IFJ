@@ -1,0 +1,39 @@
+<prog> -> global ID : function ( <fdec_args> <f_types> <prog>
+<prog> -> function ID ( <fdef_args> <f_types> <stat> <prog>
+<prog> -> ID ( <args> <prog>
+<prog> -> EOF
+<fdec_args> -> <type> <fdec_args_n>
+<fdec_args> -> )
+<fdec_args_n> -> , <type> <fdec_args_n>
+<fdec_args_n> -> )
+<fdef_args> -> ID : <type> <fdef_args_n>
+<fdef_args> -> )
+<fdef_args_n> -> , ID : <type> <fdef_args_n>
+<fdef_args_n> -> )
+<f_types> -> : <types>
+<f_types> -> e
+<types> -> <type> <types>
+<types> -> , <type> <types>
+<types> -> e
+<args> -> term <args>
+<args> -> , term <args>
+<args> -> )
+<stat> -> ID ( <args> <stat>
+<stat> -> local ID : <type> <stat>
+<stat> -> local ID : <type> = EXPR <stat>
+<stat> -> <IDs> <EXPRs> <stat>
+<stat> -> if EXPR then <stat> else <stat> end <stat>
+<stat> -> while EXPR do <stat> end <stat>
+<stat> -> return <EXPRs> <stat>
+<stat> -> end
+<IDs> -> ID <IDs>
+<IDs> -> , ID <IDs>
+<IDs> -> =
+<EXPRs> -> ID ( <args>
+<EXPRs> -> EXPR <EXPRs>
+<EXPRs> -> , EXPR <EXPRs>
+<EXPRs> -> e
+<type> -> number
+<type> -> integer
+<type> -> string
+<type> -> nil
