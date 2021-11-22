@@ -9,6 +9,38 @@
 
 typedef enum scanState {
 	START,
+	ID_OR_KEYWORD,
+	INTEGER,
+	EXPONENT,
+	EXPONENT_SIGN,
+	DECIMAL,
+	NUMBER,
+	STRING_START,
+	STRING_CHECK_ASCII,
+	STRING_VALID,
+	STRING_BACKSLASH,
+	STRING_BACKSLASH_CORRECT,
+	ADD,
+	SUB,
+	MUL,
+	DIV,
+	DIV_INT,
+	COMMA,
+	COLON,
+	PAR_L,
+	PAR_R,
+	LESS,
+	LESS_EQ,
+	GREATER,
+	GREATER_EQ,
+	ASSIGN,
+	EQ,
+	EQ_NIL_HALF,
+	EQ_NIL,
+	CONCAT_HALF,
+	CONCAT,
+	HASH
+
 } ScanState;
 
 typedef enum tokenType {
@@ -31,11 +63,11 @@ typedef enum tokenType {
 	T_LESS_EQ,    // '<='
 	T_GREATER,    // '>'
 	T_GREATER_EQ, // '>='
+	T_ASSIGN,     // '='
 	T_EQ,         // '=='
 	T_EQ_NIL,     // '~='
 	T_CONCAT,     // '..'
 	T_HASH,       // '#'
-	T_ASSIGN,     //
 } TokenType;
 
 typedef enum tokenKeyword {
