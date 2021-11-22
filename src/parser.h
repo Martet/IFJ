@@ -10,6 +10,83 @@
 #include "scanner.h"
 
 /**
+ * @brief Navratovy kod pro chyby prekladace
+ */
+typedef enum errCode {
+    ERR_OK,
+    ERR_LEX,
+    ERR_PARSE,
+    ERR_SEM_DEF,
+    ERR_SEM_ASSIGN,
+    ERR_SEM_PARAM,
+    ERR_SEM_TYPE,
+    ERR_SEM_OTHER,
+    ERR_NIL,
+    ERR_ZERO
+} ErrCode;
+
+//Tady budou struktury pro ulozeni dat funkce (typ, argumenty...)
+//TODO
+typedef enum funcType {
+    FUNC_DEF,
+    FUNC_DEC,
+    FUNC_CALL
+} FuncType;
+
+typedef struct funcData {
+    FuncType type;
+    int argc;
+    
+} funcData_t;
+
+/**
+ * @brief Makro ulozi do promenne token novy token, pri chybe vrati chybovy kod lexeru
+ * @param token Ukazatel na token
+ */
+#define NEXT_TOKEN(token)                                           \
+    do{                                                             \
+        if(get_token(token))                                        \
+            return ERR_LEX;                                         \
+    } while(0)
+
+/**
+ * @brief Makro nacte dalsi token, zkontroluje typ, pokud nesedi, vrati chybu v parseru
+ * @param token Ukazatel na token
+ * @param type Typ pro kontrolu tokenu
+ */
+#define NEXT_CHECK_TYPE(token, tp)                                  \
+    do{                                                             \
+        NEXT_TOKEN(token);                                          \
+        if((token)->type != (tp))                                   \
+            return ERR_PARSE;                                       \
+    } while(0)                                                      \
+
+/**
+ * @brief Makro nacte dalsi token, zkontroluje jestli je typ keyword a typ keywordu, pokud nesedi, vrati chybu v parseru
+ * @param token Ukazatel na token
+ * @param type Typ keywordu pro kontrolu
+ */
+#define NEXT_CHECK_KW(token, kw)                                    \
+    do{                                                             \
+        NEXT_TOKEN(token);                                          \
+        if(!((token)->type == T_KW && (token)->keyword == (kw)))    \
+            return ERR_PARSE;                                       \
+    } while(0) 
+
+/**
+ * @brief Makro zavola funkci pravidla rule, pri chybe vrati chybovy kod pravidla
+ * @param rule Pravidlo pro zavolani
+ * @param __VA_ARGS__ argumenty pravidla
+ */
+#define CALL_RULE(rule, ...)                                        \
+    do{                                                             \
+        int err = rule(__VA_ARGS__);                                \
+        if(err)                                                     \
+            return err;                                             \
+        NEXT_TOKEN(token);                                          \
+    } while(0)
+
+/**
  * @brief Implementace pravidla <prog>, startovni bod parseru
  * 
  * @param token Dalsi token pro zpracovani
