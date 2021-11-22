@@ -1,0 +1,13 @@
+CC=gcc
+CFLAGS=-std=c99 -Wall -Wextra -pedantic
+TARGETS=scanner.o parser.o main.o
+
+all: ifj
+
+ifj: $(TARGETS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+clean:
+	rm -f *.o ifj
+
+.PHONY: all clean
