@@ -5,13 +5,114 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #include "scanner.h"
 
 char buffer[20];
 
-FILE *file;
+int token_data_init(token_t *token){
+    token->data = malloc(1);
+    if(token->data == NULL){
+        // TODO chyba
+        return -1;
+    }
+    token->data[0] = '\0';
+
+    return 0;
+}
+
+int token_data_append(token_t *token, char c){
+    int len = strlen(token->data);
+    printf("STRLEN: %i\n", len);
+    token->data = realloc(token->data , len + 1 + 1);
+    // TODO check realloc success
+    token->data[len] = c;
+    token->data[len+1] = '\0';
+
+    return 0;
+}
+
+int token_data_clear(token_t *token){
+    free(token->data);
+}
 
 int is_keyword(token_t *token){
+	if(strcmp("do", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_DO;
+		return 1;
+	}
+	else if(strcmp("else", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_ELSE;
+		return 1;
+	}
+	else if(strcmp("end", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_END;
+		return 1;
+	}
+	else if(strcmp("function", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_FUNCTION;
+		return 1;
+	}
+	else if(strcmp("global", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_GLOBAL;
+		return 1;
+	}
+	else if(strcmp("if", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_IF;
+		return 1;
+	}
+	else if(strcmp("integer", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_INTEGER;
+		return 1;
+	}
+	else if(strcmp("local", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_NIL;
+		return 1;
+	}
+	else if(strcmp("nil", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_NIL;
+		return 1;
+	}
+	else if(strcmp("number", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_NUMBER;
+		return 1;
+	}
+	else if(strcmp("require", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_REQUIRE;
+		return 1;
+	}
+	else if(strcmp("return", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_RETURN;
+		return 1;
+	}
+	else if(strcmp("string", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_STRING;
+		return 1;
+	}
+	else if(strcmp("then", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_THEN;
+		return 1;
+	}
+	else if(strcmp("while", token->data) == 0){
+		token->type = T_KW;
+		token->keyword = KW_WHILE;
+		return 1;
+	}
+	token->type = T_ID;
 	return 0;
 }
 

@@ -96,6 +96,32 @@ typedef struct token {
 	float number;
 } token_t;
 
+
+/**
+ * @brief Inicializuje data v tokenu
+ *
+ * @param token Token pro zpracovani
+ *
+ */
+int token_data_init(token_t *token);
+
+/**
+ * @brief Vlozi znak do stringu
+ *
+ * @param token Token pro zpracovani
+ * @param char Znak pro vlozeni
+ *
+ */
+int token_data_append(token_t *token, char c);
+
+/**
+ * @brief Dealokuje data v tokenu
+ *
+ * @param token Token pro zpracovani
+ *
+ */
+int token_data_clear(token_t *token);
+
 /**
  * @brief Kontrola zda se jedna o klicove slovo
  *
