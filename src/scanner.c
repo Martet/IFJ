@@ -11,16 +11,6 @@ char buffer[20];
 
 FILE *file;
 
-int read_file(){
-	file = fopen("test.txt","r");
-
-	if(file == NULL){
-		return -1;
-	}
-
-	return 0;
-}
-
 int is_keyword(token_t *token){
 	return 0;
 }
@@ -42,82 +32,83 @@ int get_char_type(char c){
 
 int get_token(token_t *token){
 	ScanState state = START;
+	char curr_char;
 
 	while(1) {
-		char curr_char = fgetc(file);
+		curr_char = getchar();
 
 		switch(state){
 			case START:
 				switch(curr_char){
 					case '"':
 						state = STRING_START;
-						ungetc(curr_char, file);
+						putchar(curr_char);
 						break;
 					case '#':
 						state = HASH;
-						ungetc(curr_char, file);
+						putchar(curr_char);
 						break;
 					case '.':
 						state = CONCAT_HALF;
-						ungetc(curr_char, file);
+						putchar(curr_char);
 						break;
 					case '~':
 						state = EQ_NIL_HALF;
-						ungetc(curr_char, file);
+						putchar(curr_char);
 						break;
 					case '=':
 						state = ASSIGN;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '>':
 						state = GREATER;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '<':
 						state = LESS;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case ')':
 						state = PAR_R;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '(':
 						state = PAR_L;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case ':':
 						state = COLON;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case ',':
 						state = COMMA;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '/':
 						state = DIV;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '*':
 						state = MUL;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '-':
 						state = SUB;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					case '+':
 						state = ADD;
-						ungetc(curr_char,file);
+						putchar(curr_char);
 						break;
 					default:
 						if(get_char_type(curr_char) == 2){
 							state = ID_OR_KEYWORD;
-							ungetc(curr_char,file);
+							putchar(curr_char);
 							break;
 						}
 						if(get_char_type(curr_char) == 1){
 							state = INTEGER;
-							ungetc(curr_char,file);
+							putchar(curr_char);
 							break;
 						}
 						break;

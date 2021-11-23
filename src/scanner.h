@@ -92,12 +92,9 @@ typedef struct token {
 	TokenType type;
 	TokenKeyword keyword;
 	char *data;
+	int integer;
+	float number;
 } token_t;
-
-/**
- * @brief Zacne cist soubor
- */
-int read_file();
 
 /**
  * @brief Kontrola zda se jedna o klicove slovo
