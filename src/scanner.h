@@ -95,7 +95,28 @@ typedef struct token {
 } token_t;
 
 /**
- * @brief Implementace pravidla <fdef_args>
+ * @brief Zacne cist soubor
+ */
+int read_file();
+
+/**
+ * @brief Kontrola zda se jedna o klicove slovo
+ *
+ * @param token Aktualni token
+ *
+ */
+int is_keyword(token_t *token);
+
+/**
+ * @brief Vraci 2 pokud je (a-z,A-Z), vraci 1 pokud je cislo, jinak 0
+ *
+ * @param char Aktualni znak 
+ *
+ */
+int get_char_type(char c);
+
+/**
+ * @brief Nacte dalsi token
  *
  * @param token Dalsi token pro zpracovani
  *
