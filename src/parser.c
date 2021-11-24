@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include "scanner.h"
 #include "parser.h"
+#include "stack.h"
 
 int err;
 
