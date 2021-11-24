@@ -96,6 +96,13 @@ typedef struct token {
 	float number;
 } token_t;
 
+/**
+ * @brief Testovaci funkce pro vypis tokenu
+ *
+ * @param token Token pro vypis
+ *
+ */
+void token_print(token_t *token);
 
 /**
  * @brief Inicializuje data v tokenu
