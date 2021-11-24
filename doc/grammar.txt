@@ -12,12 +12,13 @@
 <fdef_args_n> -> )
 <f_types> -> : <types>
 <f_types> -> e
-<types> -> <type> <types>
-<types> -> , <type> <types>
-<types> -> e
-<args> -> term <args>
-<args> -> , term <args>
+<types> -> <type> <types_n>
+<types_n> -> , <type> <types_n>
+<types_n> -> e
+<args> -> <term> <args_n>
 <args> -> )
+<args_n> -> , <term> <args_n>
+<args_n> -> )
 <stat> -> ID ( <args> <stat>
 <stat> -> local ID : <type> <stat>
 <stat> -> local ID : <type> = EXPR <stat>
@@ -37,3 +38,7 @@
 <type> -> integer
 <type> -> string
 <type> -> nil
+<term> -> NUMBER
+<term> -> INTEGER
+<term> -> STRING
+<term> -> nil

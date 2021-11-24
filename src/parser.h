@@ -143,12 +143,28 @@ int f_types(token_t *token);
 int types(token_t *token);
 
 /**
+ * @brief Implementace pravidla <types_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int types_n(token_t *token);
+
+/**
  * @brief Implementace pravidla <args>
  * 
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
 int args(token_t *token);
+
+/**
+ * @brief Implementace pravidla <args_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int args_n(token_t *token);
 
 /**
  * @brief Implementace pravidla <stat>
@@ -181,5 +197,13 @@ int EXPRs(token_t *token);
  * @return int Chybovy kod
  */
 int type(token_t *token);
+
+/**
+ * @brief Implementace pravidla <term>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int term(token_t *token);
 
 #endif

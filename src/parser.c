@@ -56,31 +56,96 @@ int prog(token_t *token){
 }
 
 int fdec_args(token_t *token){
-    return 0;
+    if(token->type == T_PAR_R)
+        return ERR_OK;
+    else{
+        CALL_RULE(type, token);
+        return fdec_args_n(token);
+    }
 }
 
 int fdec_args_n(token_t *token){
-    return 0;
+    if(token->type == T_PAR_R)
+        return ERR_OK;
+    else if(token->type == T_COMMA){
+        NEXT_TOKEN(token);
+        CALL_RULE(type, token);
+        return fdec_args_n(token);
+    }
+    else
+        return ERR_PARSE;
 }
 
 int fdef_args(token_t *token){
-    return 0;
+    if(token->type == T_PAR_R)
+        return ERR_OK;
+    else if(token->type == T_ID){
+        NEXT_CHECK_TYPE(token, T_COLON);
+        NEXT_TOKEN(token);
+        CALL_RULE(type, token);
+        return fdef_args_n(token);
+    }
+    else
+        return ERR_PARSE;
 }
 
 int fdef_args_n(token_t *token){
-    return 0;
+    if(token->type == T_PAR_R)
+        return ERR_OK;
+    else if(token->type == T_COMMA){
+        NEXT_CHECK_TYPE(token, T_ID);
+        NEXT_CHECK_TYPE(token, T_COLON);
+        NEXT_TOKEN(token);
+        CALL_RULE(type, token);
+        return fdef_args_n(token);
+    }
+    else
+        return ERR_PARSE;
 }
 
 int f_types(token_t *token){
-    return 0;
+    if(token->type == T_COLON){
+        NEXT_TOKEN(token);
+        return types(token);
+    }
+    else
+        return ERR_OK; //TODO handle returning to previous token
 }
 
 int types(token_t *token){
-    return 0;
+    CALL_RULE(type, token);
+    return types_n(token);
+}
+
+int types_n(token_t *token){
+    if(token->type == T_COMMA){
+        NEXT_TOKEN(token);
+        CALL_RULE(type, token);
+        return types_n(token);
+    }
+    else
+        return ERR_OK; //TODO handle returning to previous token
 }
 
 int args(token_t *token){
-    return 0;
+    if(token->type == T_PAR_R)
+        return ERR_OK;
+    else{
+        CALL_RULE(term, token);
+        return args_n(token);
+    }
+}
+
+int args_n(token_t *token){
+    if(token->type == T_PAR_R)
+        return ERR_OK;
+    else if (token->type == T_COMMA){
+        NEXT_TOKEN(token);
+        CALL_RULE(term, token);
+        return args_n(token);
+    }
+    else
+        return ERR_PARSE;
 }
 
 int stat(token_t *token){
@@ -97,4 +162,21 @@ int EXPRs(token_t *token){
 
 int type(token_t *token){
     return 0;
+}
+
+int term(token_t *token){
+    switch(token->type){ //TODO
+        case T_ID:
+        case T_NUMBER:
+        case T_INTEGER:
+        case T_STRING:
+            return ERR_OK;
+        case T_KW:
+            if(token->keyword == KW_NIL)
+                return ERR_OK;
+            else
+                return ERR_PARSE;
+        default:
+            return ERR_PARSE;
+    }
 }
