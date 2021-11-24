@@ -13,7 +13,7 @@ char buffer[20];
 
 void token_print(token_t *token){
 	printf("\nSTART Token\n");
-	printf("type: %i\n", token->type);
+	printf("type: %i (z scanner.h)\n", token->type);
 	if(token->type == T_KW)
 		printf("keyword: %i\n", token->keyword);
 	if(token->type == T_KW || token->type == T_ID)
@@ -38,7 +38,6 @@ int token_data_init(token_t *token){
 
 int token_data_append(token_t *token, char c){
     int len = strlen(token->data);
-//     printf("STRLEN: %i\n", len);
     token->data = realloc(token->data , len + 1 + 1);
     // TODO check realloc success
     token->data[len] = c;
@@ -156,6 +155,12 @@ int get_token(token_t *token){
 		switch(state){
 			case START:
 				switch(curr_char){
+					case EOF:
+						token->type = T_EOF;
+						return;
+					case '\n':
+						token->type = T_EOL;
+						return;	
 					case '"':
 						state = STRING_START;
 						ungetc(curr_char, stdin);
@@ -237,9 +242,10 @@ int get_token(token_t *token){
 
 			case ID_OR_KEYWORD:
 				if((get_char_type(curr_char) == 0) && (curr_char != '_')){
-					is_keyword(token);
+					ungetc(curr_char, stdin);
 					return 0;
 				}
+				is_keyword(token);
 				token_data_append(token,curr_char);
 				break;
 
@@ -247,46 +253,37 @@ int get_token(token_t *token){
 				token->type = T_INTEGER;
 				if(curr_char == 'E'){
 					state = EXPONENT;
-					ungetc(curr_char, stdin);
+					token_data_append(token, curr_char);
+					// ungetc(curr_char, stdin);
 					break;
 				}
 
-				if(curr_char == ','){
+				else if(curr_char == ','){
 					state = DECIMAL;
-					ungetc(curr_char, stdin);
+					token_data_append(token,'.');
+					// ungetc(curr_char, stdin);
 					break;
 				}
-
 				// Je to cislo
-				if(get_char_type(curr_char) == 1){
+				else if(get_char_type(curr_char) == 1){
 					token_data_append(token, curr_char);
 					char *ptr;
 					long result = strtol(token->data, &ptr,10);
 					token->integer = (int) result;
 					break;
 				}
-				// Ocekavam pouze mezeru a jine ukonceni?
-				// TODO zkontrolovat spravnost teto podminky
-				else if(curr_char == ' ' || curr_char == '\n' || curr_char == EOF ){
-					// Vracim token
-					return 0;
-				}
-				// Zadne jine znaky mit nemuzu
+				// Jiny znak, vratim ho do stdin
 				else {
-					// TODO Error
+					ungetc(curr_char, stdin);
 				}
 				break;
 
 			case EXPONENT:
-				// Spravny znak, opakuju
-				if(curr_char == 'E'){
-					token_data_append(token, curr_char);
-					break;
-				}
 				// Zde ocekavam pouze + nebo -
-				else if(curr_char == '+' || curr_char == '-'){
+				if(curr_char == '+' || curr_char == '-'){
 					state = EXPONENT_SIGN;
-					ungetc(curr_char, stdin);
+					token_data_append(token,curr_char);
+					// ungetc(curr_char, stdin);
 					break;
 				}
 				// Zadne jine znaky mit nemuzu
@@ -296,13 +293,8 @@ int get_token(token_t *token){
 				break;
 
 			case EXPONENT_SIGN:
-				// Spravny znak, opakuju
-				if(curr_char == '+' || curr_char == '-'){
-					token_data_append(token, curr_char);
-					break;
-				}
 				// Zde ocekavam pouze cislo
-				else if(get_char_type(curr_char) == 1){
+				if(get_char_type(curr_char) == 1){
 					state = NUMBER;
 					ungetc(curr_char, stdin);
 					break;
@@ -314,13 +306,8 @@ int get_token(token_t *token){
 				break;
 			
 			case DECIMAL:
-				// Spravny znak, opakuju
-				if(curr_char == ','){
-					token_data_append(token, curr_char);
-					break;
-				}
 				// Zde ocekavam pouze cislo
-				else if(get_char_type(curr_char) == 1){
+				if(get_char_type(curr_char) == 1){
 					state = NUMBER;
 					ungetc(curr_char, stdin);
 					break;
@@ -337,17 +324,13 @@ int get_token(token_t *token){
 				if(get_char_type(curr_char) == 1){
 					token->type = T_NUMBER;
 					token_data_append(token, curr_char);
+					double number = strtod(token->data,NULL);
+					token->number = number;
 					break;
 				}
-				// Ocekavam pouze mezeru a jine ukonceni?
-				// TODO zkontrolovat spravnost teto podminky
-				else if(curr_char == ' ' || curr_char == '\n' || curr_char == EOF){
-					// Vracim token
-					return 0;
-				}
-				// Zadne jine znaky mit nemuzu
 				else {
-					// TODO Error
+					token_data_clear(token);
+					return;
 				}
 				break;
 			

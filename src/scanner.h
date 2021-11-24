@@ -47,6 +47,7 @@ typedef enum tokenType {
 	T_ID,  // Identifikator
 	T_KW,  // Klicove slovo
 	T_EOF, // Konec souboru
+	T_EOL,
 	T_INTEGER,
 	T_NUMBER,
 	T_STRING,
@@ -93,7 +94,7 @@ typedef struct token {
 	TokenKeyword keyword;
 	char *data;
 	int integer;
-	float number;
+	double number;
 } token_t;
 
 /**
