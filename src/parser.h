@@ -87,6 +87,17 @@ typedef struct funcData {
     } while(0)
 
 /**
+ * @brief Makro zkontroluje jestli je typ keyword a typ keywordu, pokud nesedi, vrati chybu v parseru
+ * @param token Ukazatel na token
+ * @param type Typ keywordu pro kontrolu
+ */
+#define CHECK_KW(token, kw)                                         \
+    do{                                                             \
+        if(!((token)->type == T_KW && (token)->keyword == (kw)))    \
+            return ERR_PARSE;                                       \
+    } while(0) 
+
+/**
  * @brief Implementace pravidla <prog>, startovni bod parseru
  * 
  * @param token Dalsi token pro zpracovani
@@ -183,12 +194,28 @@ int stat(token_t *token);
 int IDs(token_t *token);
 
 /**
+ * @brief Implementace pravidla <IDs_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int IDs_n(token_t *token);
+
+/**
  * @brief Implementace pravidla <EXPRs>
  * 
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
 int EXPRs(token_t *token);
+
+/**
+ * @brief Implementace pravidla <EXPRs_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int EXPRs_n(token_t *token);
 
 /**
  * @brief Implementace pravidla <type>

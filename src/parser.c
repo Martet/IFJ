@@ -11,13 +11,13 @@
 int err;
 
 int prog(token_t *token){
-    char *id;
+    //char *id;
     switch(token->type){
         case T_KW:
             switch(token->keyword){
                 case KW_GLOBAL: //<prog> -> global ID : function ( <fdec_args> <f_types> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
-                    id = token->data; 
+                    //id = token->data; 
                     //CREATE NEW FUNCTION
                     //ADD FUNCTION TO GLOBAL SYMTABLE
                     NEXT_CHECK_TYPE(token, T_COLON);
@@ -29,7 +29,7 @@ int prog(token_t *token){
                     return prog(token);
                 case KW_FUNCTION: //<prog> -> function ID ( <fdef_args> <f_types> <stat> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
-                    id = token->data; 
+                    //id = token->data; 
                     //CREATE NEW FUNCTION
                     //ADD FUNCTION TO GLOBAL SYMTABLE
                     NEXT_CHECK_TYPE(token, T_PAR_L);
@@ -43,7 +43,7 @@ int prog(token_t *token){
             }
             break;
         case T_ID: //<prog> -> ID ( <args> <prog>
-            id = token->data;
+            //id = token->data;
             NEXT_CHECK_TYPE(token, T_PAR_L);
             CALL_RULE(args, token);
             //GENERATE CODE FOR FUNC CALL
@@ -56,18 +56,18 @@ int prog(token_t *token){
 }
 
 int fdec_args(token_t *token){
-    if(token->type == T_PAR_R)
+    if(token->type == T_PAR_R) //<fdec_args> -> )
         return ERR_OK;
-    else{
+    else{ //<fdec_args> -> <type> <fdec_args_n>
         CALL_RULE(type, token);
         return fdec_args_n(token);
     }
 }
 
 int fdec_args_n(token_t *token){
-    if(token->type == T_PAR_R)
+    if(token->type == T_PAR_R) //<fdec_args_n> -> )
         return ERR_OK;
-    else if(token->type == T_COMMA){
+    else if(token->type == T_COMMA){ //<fdec_args_n> -> , <type> <fdec_args_n>
         NEXT_TOKEN(token);
         CALL_RULE(type, token);
         return fdec_args_n(token);
@@ -77,9 +77,9 @@ int fdec_args_n(token_t *token){
 }
 
 int fdef_args(token_t *token){
-    if(token->type == T_PAR_R)
+    if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
-    else if(token->type == T_ID){
+    else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         CALL_RULE(type, token);
@@ -90,9 +90,9 @@ int fdef_args(token_t *token){
 }
 
 int fdef_args_n(token_t *token){
-    if(token->type == T_PAR_R)
+    if(token->type == T_PAR_R) //<fdef_args_n> -> )
         return ERR_OK;
-    else if(token->type == T_COMMA){
+    else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
         NEXT_CHECK_TYPE(token, T_ID);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
@@ -104,42 +104,42 @@ int fdef_args_n(token_t *token){
 }
 
 int f_types(token_t *token){
-    if(token->type == T_COLON){
+    if(token->type == T_COLON){ //<f_types> -> : <types>
         NEXT_TOKEN(token);
         return types(token);
     }
-    else
+    else //<f_types> -> e
         return ERR_OK; //TODO handle returning to previous token
 }
 
-int types(token_t *token){
+int types(token_t *token){ //<types> -> <type> <types_n>
     CALL_RULE(type, token);
     return types_n(token);
 }
 
 int types_n(token_t *token){
-    if(token->type == T_COMMA){
+    if(token->type == T_COMMA){ //<types_n> -> , <type> <types_n>
         NEXT_TOKEN(token);
         CALL_RULE(type, token);
         return types_n(token);
     }
-    else
+    else //<types_n> -> e
         return ERR_OK; //TODO handle returning to previous token
 }
 
 int args(token_t *token){
-    if(token->type == T_PAR_R)
+    if(token->type == T_PAR_R) //<args> -> )
         return ERR_OK;
-    else{
+    else{ //<args> -> <term> <args_n>
         CALL_RULE(term, token);
         return args_n(token);
     }
 }
 
 int args_n(token_t *token){
-    if(token->type == T_PAR_R)
+    if(token->type == T_PAR_R) //<args_n> -> )
         return ERR_OK;
-    else if (token->type == T_COMMA){
+    else if (token->type == T_COMMA){ //<args_n> -> , <term> <args_n>
         NEXT_TOKEN(token);
         CALL_RULE(term, token);
         return args_n(token);
@@ -149,19 +149,122 @@ int args_n(token_t *token){
 }
 
 int stat(token_t *token){
-    return 0;
+    if(token->type == T_ID){
+        if(1/*TODO if type of id from symtable is function*/){ //<stat> -> ID ( <args> <stat>
+            NEXT_CHECK_TYPE(token, T_PAR_L);
+            NEXT_TOKEN(token);
+            CALL_RULE(args, token);
+            return stat(token);
+        }
+        else{ //<stat> -> <IDs> <EXPRs> <stat>
+            CALL_RULE(IDs, token);
+            CALL_RULE(EXPRs, token);
+            return stat(token);
+        }
+    }
+    else if(token->type == T_KW){
+        switch(token->keyword){
+            case KW_LOCAL:
+                NEXT_CHECK_TYPE(token, T_ID);
+                NEXT_CHECK_TYPE(token, T_COLON);
+                NEXT_TOKEN(token);
+                CALL_RULE(type, token);
+                if(token->type == T_EQ){ //<stat> -> local ID : <type> = <EXPRs> <stat>
+                    NEXT_TOKEN(token);
+                    CALL_RULE(EXPRs, token);
+                }
+                else //<stat> -> local ID : <type> <stat>
+                    NEXT_TOKEN(token);
+                return stat(token);
+            case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
+                NEXT_TOKEN(token);
+                //PARSE EXPRESSION
+                NEXT_CHECK_KW(token, KW_THEN);
+                NEXT_TOKEN(token);
+                CALL_RULE(stat, token);
+                CHECK_KW(token, KW_ELSE);
+                NEXT_TOKEN(token);
+                CALL_RULE(stat, token);
+                return stat(token);
+            case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
+                NEXT_TOKEN(token);
+                //PARSE EXPRESSION
+                NEXT_CHECK_KW(token, KW_DO);
+                NEXT_TOKEN(token);
+                CALL_RULE(stat, token);
+                return stat(token);
+            case KW_RETURN: //<stat> -> return <EXPRs> <stat>
+                NEXT_TOKEN(token);
+                CALL_RULE(EXPRs, token);
+                return stat(token);
+            case KW_END: //<stat> -> end
+                return ERR_OK;
+            default:
+                return ERR_PARSE;
+        }
+    }
+    else
+        return ERR_PARSE;
 }
 
 int IDs(token_t *token){
-    return 0;
+    if(token->type == T_ID){ //<IDs> -> ID <IDs_n>
+        NEXT_TOKEN(token);
+        return IDs_n(token);
+    }
+    else
+        return ERR_PARSE;
+}
+
+int IDs_n(token_t *token){
+    if(token->type == T_EQ) //<IDs_n> -> =
+        return ERR_OK;
+    else if(token->type == T_COMMA){ //<IDs_n> -> , ID <IDs_n>
+        NEXT_CHECK_TYPE(token, T_ID);
+        NEXT_TOKEN(token);
+        return IDs_n(token);
+    }
+    else
+        return ERR_PARSE;
 }
 
 int EXPRs(token_t *token){
-    return 0;
+    if(token->type == T_ID){ //<EXPRs> -> ID ( <args>
+        NEXT_CHECK_TYPE(token, T_PAR_L);
+        NEXT_TOKEN(token);
+        CALL_RULE(args, token);
+        return ERR_OK;
+    }
+    else{ //<EXPRs> -> EXPR <EXPRs_n>
+        //PARSE EXPRESSION
+        NEXT_TOKEN(token);
+        return EXPRs_n(token);
+    }
+}
+
+int EXPRs_n(token_t *token){
+    if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
+        NEXT_TOKEN(token);
+        //PARSE EXPRESSION
+        NEXT_TOKEN(token);
+        return EXPRs_n(token);
+    }
+    else //<EXPRs_n> -> e
+        return ERR_OK; //TODO handle returning to previous token
 }
 
 int type(token_t *token){
-    return 0;
+    if(token->type != T_KW)
+        return ERR_PARSE;
+    switch(token->keyword){ //TODO
+        case KW_NUMBER:
+        case KW_INTEGER:
+        case KW_STRING:
+        case KW_NIL:
+            return ERR_OK;
+        default:
+            return ERR_PARSE;
+    }
 }
 
 int term(token_t *token){
@@ -177,6 +280,6 @@ int term(token_t *token){
             else
                 return ERR_PARSE;
         default:
-            return ERR_PARSE;
+            return ERR_PARSE; 
     }
 }
