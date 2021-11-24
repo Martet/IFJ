@@ -12,28 +12,33 @@
 <fdef_args_n> -> )
 <f_types> -> : <types>
 <f_types> -> e
-<types> -> <type> <types>
-<types> -> , <type> <types>
-<types> -> e
-<args> -> term <args>
-<args> -> , term <args>
+<types> -> <type> <types_n>
+<types_n> -> , <type> <types_n>
+<types_n> -> e
+<args> -> <term> <args_n>
 <args> -> )
+<args_n> -> , <term> <args_n>
+<args_n> -> )
 <stat> -> ID ( <args> <stat>
 <stat> -> local ID : <type> <stat>
-<stat> -> local ID : <type> = EXPR <stat>
+<stat> -> local ID : <type> = <EXPRs> <stat>
 <stat> -> <IDs> <EXPRs> <stat>
-<stat> -> if EXPR then <stat> else <stat> end <stat>
-<stat> -> while EXPR do <stat> end <stat>
+<stat> -> if EXPR then <stat> else <stat> <stat>
+<stat> -> while EXPR do <stat> <stat>
 <stat> -> return <EXPRs> <stat>
 <stat> -> end
-<IDs> -> ID <IDs>
-<IDs> -> , ID <IDs>
-<IDs> -> =
+<IDs> -> ID <IDs_n>
+<IDs_n> -> , ID <IDs_n>
+<IDs_n> -> =
 <EXPRs> -> ID ( <args>
-<EXPRs> -> EXPR <EXPRs>
-<EXPRs> -> , EXPR <EXPRs>
-<EXPRs> -> e
+<EXPRs> -> EXPR <EXPRs_n>
+<EXPRs_n> -> , EXPR <EXPRs_n>
+<EXPRs_n> -> e
 <type> -> number
 <type> -> integer
 <type> -> string
 <type> -> nil
+<term> -> NUMBER
+<term> -> INTEGER
+<term> -> STRING
+<term> -> nil
