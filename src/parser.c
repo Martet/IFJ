@@ -5,12 +5,21 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "scanner.h"
 #include "parser.h"
+
+int test_token(token_t *token){
+    static int test_index = 0;
+    token_t token_list[] = {{T_KW, KW_FUNCTION}, {T_ID, data: "foo"}, {T_PAR_L}, {T_ID, data: "bar"}, {T_COLON}, {T_KW, KW_NUMBER}, {T_PAR_R}, {T_COLON}, {T_KW, KW_STRING}, {T_KW, KW_RETURN}, {T_STRING, data: "test"}, {T_KW, KW_END}, {T_ID, data: "foo"}, {T_PAR_L}, {T_INTEGER, integer: 5}, {T_PAR_R}, {T_EOF}};
+    *token = token_list[test_index++];
+    return 0;
+}
 
 int err;
 
 int prog(token_t *token){
+    PRINT_DEBUG;
     //char *id;
     switch(token->type){
         case T_KW:
@@ -56,6 +65,7 @@ int prog(token_t *token){
 }
 
 int fdec_args(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdec_args> -> )
         return ERR_OK;
     else{ //<fdec_args> -> <type> <fdec_args_n>
@@ -65,6 +75,7 @@ int fdec_args(token_t *token){
 }
 
 int fdec_args_n(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdec_args_n> -> )
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdec_args_n> -> , <type> <fdec_args_n>
@@ -77,6 +88,7 @@ int fdec_args_n(token_t *token){
 }
 
 int fdef_args(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
@@ -90,6 +102,7 @@ int fdef_args(token_t *token){
 }
 
 int fdef_args_n(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdef_args_n> -> )
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
@@ -104,6 +117,7 @@ int fdef_args_n(token_t *token){
 }
 
 int f_types(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_COLON){ //<f_types> -> : <types>
         NEXT_TOKEN(token);
         return types(token);
@@ -113,11 +127,13 @@ int f_types(token_t *token){
 }
 
 int types(token_t *token){ //<types> -> <type> <types_n>
+PRINT_DEBUG;
     CALL_RULE(type, token);
     return types_n(token);
 }
 
 int types_n(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_COMMA){ //<types_n> -> , <type> <types_n>
         NEXT_TOKEN(token);
         CALL_RULE(type, token);
@@ -128,6 +144,7 @@ int types_n(token_t *token){
 }
 
 int args(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<args> -> )
         return ERR_OK;
     else{ //<args> -> <term> <args_n>
@@ -137,6 +154,7 @@ int args(token_t *token){
 }
 
 int args_n(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<args_n> -> )
         return ERR_OK;
     else if (token->type == T_COMMA){ //<args_n> -> , <term> <args_n>
@@ -149,6 +167,7 @@ int args_n(token_t *token){
 }
 
 int stat(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_ID){
         if(1/*TODO if type of id from symtable is function*/){ //<stat> -> ID ( <args> <stat>
             NEXT_CHECK_TYPE(token, T_PAR_L);
@@ -208,6 +227,7 @@ int stat(token_t *token){
 }
 
 int IDs(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_ID){ //<IDs> -> ID <IDs_n>
         NEXT_TOKEN(token);
         return IDs_n(token);
@@ -217,6 +237,7 @@ int IDs(token_t *token){
 }
 
 int IDs_n(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_EQ) //<IDs_n> -> =
         return ERR_OK;
     else if(token->type == T_COMMA){ //<IDs_n> -> , ID <IDs_n>
@@ -229,6 +250,7 @@ int IDs_n(token_t *token){
 }
 
 int EXPRs(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_ID){ //<EXPRs> -> ID ( <args>
         NEXT_CHECK_TYPE(token, T_PAR_L);
         NEXT_TOKEN(token);
@@ -243,6 +265,7 @@ int EXPRs(token_t *token){
 }
 
 int EXPRs_n(token_t *token){
+    PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
         //PARSE EXPRESSION
@@ -254,6 +277,7 @@ int EXPRs_n(token_t *token){
 }
 
 int type(token_t *token){
+    PRINT_DEBUG;
     if(token->type != T_KW)
         return ERR_PARSE;
     switch(token->keyword){ //TODO
@@ -268,6 +292,7 @@ int type(token_t *token){
 }
 
 int term(token_t *token){
+    PRINT_DEBUG;
     switch(token->type){ //TODO
         case T_ID:
         case T_NUMBER:

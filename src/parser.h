@@ -39,13 +39,15 @@ typedef struct funcData {
     
 } funcData_t;
 
+int test_token(token_t *token);
+
 /**
  * @brief Makro ulozi do promenne token novy token, pri chybe vrati chybovy kod lexeru
  * @param token Ukazatel na token
  */
 #define NEXT_TOKEN(token)                                           \
     do{                                                             \
-        if(get_token(token))                                        \
+        if(test_token(token))                                        \
             return ERR_LEX;                                         \
     } while(0)
 
@@ -96,6 +98,8 @@ typedef struct funcData {
         if(!((token)->type == T_KW && (token)->keyword == (kw)))    \
             return ERR_PARSE;                                       \
     } while(0) 
+
+#define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
 
 /**
  * @brief Implementace pravidla <prog>, startovni bod parseru
