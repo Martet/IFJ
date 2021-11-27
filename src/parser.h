@@ -111,6 +111,14 @@ int test_token(token_t *token);
 #define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
 
 /**
+ * @brief Prida znak na konec dynamickeho stringu
+ * 
+ * @param str Ukazatel na ukazatel na dynamicky alokovany string
+ * @param c Znak pro pridani
+ */
+void string_append(char **str, char c);
+
+/**
  * @brief Implementace pravidla <prog>, startovni bod parseru
  * 
  * @param token Dalsi token pro zpracovani
@@ -241,7 +249,7 @@ int EXPRs_n(token_t *token, bool *empty);
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
-int type(token_t *token);
+int type(token_t *token, bool params);
 
 /**
  * @brief Implementace pravidla <term>

@@ -6,8 +6,10 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "scanner.h"
 #include "parser.h"
+#include "symtable.h"
 
 int test_token(token_t *token){
     static int test_index = 0;
@@ -16,19 +18,31 @@ int test_token(token_t *token){
     return 0;
 }
 
-int err;
+symtable_t *global_table;
+tableItem_t *tItem;
+
+void string_append(char **str, char c){
+    int len = strlen(*str);
+    *str = realloc(*str, len + 2);
+    if(*str == NULL)
+        exit(99);
+    (*str)[len] = c;
+    (*str)[len + 1] = 0;
+}
 
 int prog(token_t *token){
     PRINT_DEBUG;
-    //char *id;
+    char *id;
     switch(token->type){
         case T_KW:
             switch(token->keyword){
                 case KW_GLOBAL: //<prog> -> global ID : function ( <fdec_args> <f_types> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
-                    //id = token->data; 
-                    //CREATE NEW FUNCTION
-                    //ADD FUNCTION TO GLOBAL SYMTABLE
+                    if(table_search(global_table, token->data))
+                        return ERR_SEM_DEF;
+                    tItem = table_insert(global_table, token->data);
+                    tItem->defined = false;
+                    tItem->isFunc = true;
                     NEXT_CHECK_TYPE(token, T_COLON);
                     NEXT_CHECK_KW(token, KW_FUNCTION);
                     NEXT_CHECK_TYPE(token, T_PAR_L);
@@ -70,7 +84,7 @@ int fdec_args(token_t *token){
     if(token->type == T_PAR_R) //<fdec_args> -> )
         return ERR_OK;
     else{ //<fdec_args> -> <type> <fdec_args_n>
-        CALL_RULE(type, token);
+        CALL_RULE(type, token, true);
         return fdec_args_n(token);
     }
 }
@@ -81,7 +95,7 @@ int fdec_args_n(token_t *token){
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdec_args_n> -> , <type> <fdec_args_n>
         NEXT_TOKEN(token);
-        CALL_RULE(type, token);
+        CALL_RULE(type, token, true);
         return fdec_args_n(token);
     }
     else
@@ -95,7 +109,7 @@ int fdef_args(token_t *token){
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
-        CALL_RULE(type, token);
+        CALL_RULE(type, token, true);
         return fdef_args_n(token);
     }
     else
@@ -110,7 +124,7 @@ int fdef_args_n(token_t *token){
         NEXT_CHECK_TYPE(token, T_ID);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
-        CALL_RULE(type, token);
+        CALL_RULE(type, token, true);
         return fdef_args_n(token);
     }
     else
@@ -131,7 +145,7 @@ int f_types(token_t *token, bool *empty){
 
 int types(token_t *token, bool *empty){ //<types> -> <type> <types_n>
 PRINT_DEBUG;
-    CALL_RULE(type, token);
+    CALL_RULE(type, token, false);
     return types_n(token, empty);
 }
 
@@ -139,7 +153,7 @@ int types_n(token_t *token, bool *empty){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<types_n> -> , <type> <types_n>
         NEXT_TOKEN(token);
-        CALL_RULE(type, token);
+        CALL_RULE(type, token, false);
         return types_n(token, empty);
     }
     else{ //<types_n> -> e
@@ -192,7 +206,7 @@ int stat(token_t *token){
                 NEXT_CHECK_TYPE(token, T_ID);
                 NEXT_CHECK_TYPE(token, T_COLON);
                 NEXT_TOKEN(token);
-                CALL_RULE(type, token);
+                CALL_RULE(type, token, false);
                 if(token->type == T_EQ){ //<stat> -> local ID : <type> = <EXPRs> <stat>
                     NEXT_TOKEN(token);
                     CALL_RULE_EMPTY(EXPRs);
@@ -283,19 +297,32 @@ int EXPRs_n(token_t *token, bool *empty){
     }
 }
 
-int type(token_t *token){
+int type(token_t *token, bool params){
     PRINT_DEBUG;
     if(token->type != T_KW)
         return ERR_PARSE;
+    char type;
     switch(token->keyword){ //TODO
         case KW_NUMBER:
+            type = 'N';
+            break;
         case KW_INTEGER:
+            type = 'I';
+            break;
         case KW_STRING:
+            type = 'S';
+            break;
         case KW_NIL:
-            return ERR_OK;
+            type = 'n';
+            break;
         default:
             return ERR_PARSE;
     }
+    if(params)
+        string_append(&(tItem->params), type);
+    else
+        string_append(&(tItem->types), type);
+    return ERR_OK;
 }
 
 int term(token_t *token){
