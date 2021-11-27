@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra -pedantic
+CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
 TARGETS=scanner.o parser.o main.o
 
 all: ifj
