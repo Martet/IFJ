@@ -7,6 +7,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdbool.h>
 #include "scanner.h"
 
 /**
@@ -83,8 +84,7 @@ int test_token(token_t *token);
 #define CALL_RULE(rule, ...)                                        \
     do{                                                             \
         int err = rule(__VA_ARGS__);                                \
-        if(err)                                                     \
-            return err;                                             \
+        if(err) return err;                                         \
         NEXT_TOKEN(token);                                          \
     } while(0)
 
@@ -98,6 +98,15 @@ int test_token(token_t *token);
         if(!((token)->type == T_KW && (token)->keyword == (kw)))    \
             return ERR_PARSE;                                       \
     } while(0) 
+
+#define CALL_RULE_EMPTY(rule)                                       \
+    do{                                                             \
+        bool empty = false;                                         \
+        int err = rule(token, &empty);                              \
+        if(err) return err;                                         \
+        if(!empty)                                                  \
+            NEXT_TOKEN(token);                                      \
+    } while(0)
 
 #define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
 
@@ -145,25 +154,28 @@ int fdef_args_n(token_t *token);
  * @brief Implementace pravidla <f_types>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int f_types(token_t *token);
+int f_types(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <types>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int types(token_t *token);
+int types(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <types_n>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int types_n(token_t *token);
+int types_n(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <args>
@@ -209,17 +221,19 @@ int IDs_n(token_t *token);
  * @brief Implementace pravidla <EXPRs>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int EXPRs(token_t *token);
+int EXPRs(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <EXPRs_n>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int EXPRs_n(token_t *token);
+int EXPRs_n(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <type>

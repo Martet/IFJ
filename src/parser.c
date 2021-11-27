@@ -34,7 +34,7 @@ int prog(token_t *token){
                     NEXT_CHECK_TYPE(token, T_PAR_L);
                     NEXT_TOKEN(token);
                     CALL_RULE(fdec_args, token);
-                    CALL_RULE(f_types, token);
+                    CALL_RULE_EMPTY(f_types);
                     return prog(token);
                 case KW_FUNCTION: //<prog> -> function ID ( <fdef_args> <f_types> <stat> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
@@ -44,7 +44,7 @@ int prog(token_t *token){
                     NEXT_CHECK_TYPE(token, T_PAR_L);
                     NEXT_TOKEN(token);
                     CALL_RULE(fdef_args, token);
-                    CALL_RULE(f_types, token);
+                    CALL_RULE_EMPTY(f_types);
                     CALL_RULE(stat, token);
                     return prog(token);
                 default:
@@ -54,6 +54,7 @@ int prog(token_t *token){
         case T_ID: //<prog> -> ID ( <args> <prog>
             //id = token->data;
             NEXT_CHECK_TYPE(token, T_PAR_L);
+            NEXT_TOKEN(token);
             CALL_RULE(args, token);
             //GENERATE CODE FOR FUNC CALL
             return prog(token);
@@ -116,31 +117,35 @@ int fdef_args_n(token_t *token){
         return ERR_PARSE;
 }
 
-int f_types(token_t *token){
+int f_types(token_t *token, bool *empty){
     PRINT_DEBUG;
     if(token->type == T_COLON){ //<f_types> -> : <types>
         NEXT_TOKEN(token);
-        return types(token);
+        return types(token, empty);
     }
-    else //<f_types> -> e
-        return ERR_OK; //TODO handle returning to previous token
+    else{ //<f_types> -> e
+        *empty = true;
+        return ERR_OK;
+    }
 }
 
-int types(token_t *token){ //<types> -> <type> <types_n>
+int types(token_t *token, bool *empty){ //<types> -> <type> <types_n>
 PRINT_DEBUG;
     CALL_RULE(type, token);
-    return types_n(token);
+    return types_n(token, empty);
 }
 
-int types_n(token_t *token){
+int types_n(token_t *token, bool *empty){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<types_n> -> , <type> <types_n>
         NEXT_TOKEN(token);
         CALL_RULE(type, token);
-        return types_n(token);
+        return types_n(token, empty);
     }
-    else //<types_n> -> e
-        return ERR_OK; //TODO handle returning to previous token
+    else{ //<types_n> -> e
+        *empty = true;
+        return ERR_OK;
+    }
 }
 
 int args(token_t *token){
@@ -177,7 +182,7 @@ int stat(token_t *token){
         }
         else{ //<stat> -> <IDs> <EXPRs> <stat>
             CALL_RULE(IDs, token);
-            CALL_RULE(EXPRs, token);
+            CALL_RULE_EMPTY(EXPRs);
             return stat(token);
         }
     }
@@ -190,7 +195,7 @@ int stat(token_t *token){
                 CALL_RULE(type, token);
                 if(token->type == T_EQ){ //<stat> -> local ID : <type> = <EXPRs> <stat>
                     NEXT_TOKEN(token);
-                    CALL_RULE(EXPRs, token);
+                    CALL_RULE_EMPTY(EXPRs);
                 }
                 else //<stat> -> local ID : <type> <stat>
                     NEXT_TOKEN(token);
@@ -214,7 +219,7 @@ int stat(token_t *token){
                 return stat(token);
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
                 NEXT_TOKEN(token);
-                CALL_RULE(EXPRs, token);
+                CALL_RULE_EMPTY(EXPRs);
                 return stat(token);
             case KW_END: //<stat> -> end
                 return ERR_OK;
@@ -249,7 +254,7 @@ int IDs_n(token_t *token){
         return ERR_PARSE;
 }
 
-int EXPRs(token_t *token){
+int EXPRs(token_t *token, bool *empty){
     PRINT_DEBUG;
     if(token->type == T_ID){ //<EXPRs> -> ID ( <args>
         NEXT_CHECK_TYPE(token, T_PAR_L);
@@ -260,20 +265,22 @@ int EXPRs(token_t *token){
     else{ //<EXPRs> -> EXPR <EXPRs_n>
         //PARSE EXPRESSION
         NEXT_TOKEN(token);
-        return EXPRs_n(token);
+        return EXPRs_n(token, empty);
     }
 }
 
-int EXPRs_n(token_t *token){
+int EXPRs_n(token_t *token, bool *empty){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
         //PARSE EXPRESSION
         NEXT_TOKEN(token);
-        return EXPRs_n(token);
+        return EXPRs_n(token, empty);
     }
-    else //<EXPRs_n> -> e
-        return ERR_OK; //TODO handle returning to previous token
+    else{ //<EXPRs_n> -> e
+        *empty = true;
+        return ERR_OK;
+    }
 }
 
 int type(token_t *token){
