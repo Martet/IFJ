@@ -1,45 +1,26 @@
 #include <stdio.h>
 
-
-
 #define MAX_STACK 20
 
+typedef struct item {
 
-extern int STACK_SIZE;
+	struct item *next;
+	int data;
+}ptrItem;
 
-/** Globální proměnná - indikuje, zda operace volala chybu. */
-extern int error_flag;
 
-/** Celkový počet možných chyb. */
-#define MAX_SERR    3
-/** Chyba při Stack_Init. */
-#define SERR_INIT   1
-/** Chyba při Stack_Push. */
-#define SERR_PUSH   2
-/** Chyba při Stack_Top. */
-#define SERR_TOP    3
-
-/** ADT zásobník implementovaný ve statickém poli. */
-typedef struct {
-	/** Pole pro uložení hodnot. */
-	char array[MAX_STACK];
-	/** Index prvku na vrcholu zásobníku. */
-	int topIndex;
+typedef struct 
+{
+	ptrItem *top;
 } Stack;
 
 
-/**
- * @brief Vytiskne chybu pokud k ni dojde
- *
- * @param eror_code typ chyby
- *
- */void Stack_Error( int );
 
 /**
  * @brief Inicializace zasobniku, top index == -1
  * @param stack Ukazatel na zásobník
  */
-void Stack_Init( Stack * );
+void Stack_Init( Stack* stack);
 
 /**
  * @brief Kontrola zda je zásobník prázdný, 
@@ -48,7 +29,7 @@ void Stack_Init( Stack * );
  *
  * @returns prázdný = 1, neprázdný 0
  */
-int Stack_IsEmpty( const Stack * );
+bool Stack_IsEmpty( Stack* stack);
 
 /**
  * @brief Kontrola zda je zásobnik plný
@@ -57,28 +38,34 @@ int Stack_IsEmpty( const Stack * );
  *
  * @returns Nenulovou hodnotu v případě, že je zásobník plný, jinak nulu
  */
-int Stack_IsFull( const Stack * );
+int Stack_IsFull( Stack* stack );
 
 /**
  * @brief Funkce vraci hodnotu vrcholu zásobniku
  *
  * @param stack Ukazatel na zásobník
- * @param dataPtr Ukazatel na cílovou proměnnou
+ * @param value Ukazatel na cílovou proměnnou
  */
-void Stack_Top( const Stack *, char * );
+int Stack_Top( Stack* stack);
 
 /**
  * @brief Odstraní vrcholový prvek zásobníku
  *
  * @param stack Ukazatel na zásobník
  */
-void Stack_Pop( Stack * );
+void Stack_Pop( Stack* stack );
 
 /**
  * @brief Vlozeni noveho prvku na vrchol zasobniku
  * @param stack Ukazatel na zásobník
- * @param data Znak k vložení
+ * @param data string k vložení
  */
-void Stack_Push( Stack *, char );
+void Stack_Push( Stack* stack, int value);
+
+void Stack_Destroy( Stack* stack);
+
+void Stack_InsertToTerm(Stack *stack);
+
+ptrItem* Stack_Top_Ptr( Stack* stack);
 
 

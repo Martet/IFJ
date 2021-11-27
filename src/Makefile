@@ -1,6 +1,6 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra -pedantic
-TARGETS=scanner.o parser.o main.o
+CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
+TARGETS=scanner.o parser.o main.o stack.o expression.o
 
 all: ifj
 

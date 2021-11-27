@@ -3,64 +3,44 @@
  * @author Petr Hýbl (xhyblp01@stud.fit.vutbr.cz)
  * @brief Implentace pomocnych funkci pro zasobnik
 */
-
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 #include "stack.h"
 
-int STACK_SIZE = MAX_STACK;
-int error_flag;
 
 
-void Stack_Error(int error_code)
-{
-	static const char *SERR_STRINGS[MAX_SERR + 1] = {
-		"Unknown error",
-		"Stack error: INIT",
-		"Stack error: PUSH",
-		"Stack error: TOP"};
 
-	if (error_code <= 0 || error_code > MAX_SERR)
-		error_code = 0;
-	printf("%s\n", SERR_STRINGS[error_code]);
-	error_flag = 1;
-}
 
 
 void Stack_Init(Stack *stack)
 {
+	stack->top = NULL; // nastaveni inicializace
+}
 
-	if (stack == NULL) //pokud stack == nul vyhlasit eror
+
+bool Stack_IsEmpty(Stack* stack)
+{
+	if (stack->top == NULL)
 	{
-		Stack_Error(SERR_INIT);
-		return;
+		return true;
 	}
-
-	stack->topIndex = -1; // nastaveni inicializace
+	
+	return false; //pokud je index rovny inicializaci vratim true
 }
 
 
-int Stack_IsEmpty(const Stack *stack)
-{
-
-	return (stack->topIndex == -1); //pokud je index rovny inicializaci vratim true
-}
 
 
-int Stack_IsFull(const Stack *stack)
-{
-
-	return (stack->topIndex == STACK_SIZE - 1); //pokud je index rovny maximu poctu vrati true
-}
-
-
-void Stack_Top(const Stack *stack, char *dataPtr)
+int Stack_Top(Stack *stack)
 {
 
 	if (Stack_IsEmpty(stack)) //pokud je prazdny nejsou v nem data
 	{
-		Stack_Error(SERR_TOP);
+		return -1;
 	}
 
-	*dataPtr = stack->array[stack->topIndex]; // vrati vrchol zasobniku
+	return stack->top->data; // vrati vrchol zasobniku
 }
 
 
@@ -69,21 +49,62 @@ void Stack_Pop(Stack *stack)
 
 	if (!Stack_IsEmpty(stack)) //pokud neni prazdny
 	{
-		stack->topIndex--; //vypusteni prvku na vrcholu zasobniku
+		ptrItem *item=NULL;
+		item = stack->top;
+		stack->top = item->next;
+		free(item);
 	}
 }
 
 
-void Stack_Push(Stack *stack, char data)
+void Stack_Push(Stack *stack, int data)
+{
+	ptrItem *item = malloc(sizeof(ptrItem));
+	if (item==NULL)
+	{
+		return;
+	}
+	item->data=data;
+	item->next=stack->top;
+	stack->top=item;
+	return;
+
+}
+
+void Stack_Destroy(Stack *stack)
 {
 
-	if (!Stack_IsFull(stack)) //pokud neni plny
+	while (!Stack_IsEmpty(stack)) //pokud neni prazdny
 	{
-		stack->topIndex++;					  // zvetsi pocet prvku
-		stack->array[stack->topIndex] = data; //pridej novy prvek
+		ptrItem *item=NULL;
+		item = stack->top;
+		stack->top = item->next;
+		free(item);
 	}
-	else
-		Stack_Error(SERR_PUSH);
+}
+
+void Stack_InsertToTerm(Stack *stack)
+{
+
+	
+	int zaloha = Stack_Top(stack);
+	Stack_Pop(stack);
+	zaloha = zaloha + '<';
+	Stack_Push(stack,zaloha);
+
+	
+
+}
+
+ptrItem* Stack_Top_Ptr( Stack* stack){
+
+	if (Stack_IsEmpty(stack)) //pokud je prazdny nejsou v nem data
+	{
+		return;
+	}
+	ptrItem* top = stack->top;
+	return top;
+
 }
 
 /* Konec c202.c */
