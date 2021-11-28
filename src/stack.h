@@ -1,6 +1,7 @@
 #include <stdio.h>
 
-#define MAX_STACK 20
+#ifndef STACK_H
+#define STACK_H
 
 typedef struct item {
 
@@ -64,8 +65,11 @@ void Stack_Push( Stack* stack, int value);
 
 void Stack_Destroy( Stack* stack);
 
-void Stack_InsertToTerm(Stack *stack);
 
 ptrItem* Stack_Top_Ptr( Stack* stack);
 
+void Stack_Print( Stack* stack);
 
+int Stack_InsertBeforeNonTerm(Stack *stack, int data);
+
+#endif

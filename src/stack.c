@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "stack.h"
-
+#include "expression.h"
 
 
 
@@ -83,14 +83,40 @@ void Stack_Destroy(Stack *stack)
 	}
 }
 
-void Stack_InsertToTerm(Stack *stack)
+int Stack_InsertBeforeNonTerm(Stack *stack, int data)
 {
 
+	ptrItem* tmp = Stack_Top_Ptr(stack);
+	ptrItem* previous = NULL;
+	while (tmp!= NULL)
+	{
+		if (tmp->data < I_HALT)
+		{
+			ptrItem *novy = malloc(sizeof(ptrItem));
+			if (novy == NULL)
+			{
+				return -1;
+			}
+			novy->data = data;
+			if (previous != NULL)
+			{
+				novy->next = previous->next;
+				previous->next = novy;
+			}
+			else{
+				novy->next = stack->top;
+				stack->top = novy;
+			}
+			return 0;
+			
+			
+		}
+		previous = tmp;
+		tmp = tmp->next;
+	}
+	return 0;
 	
-	int zaloha = Stack_Top(stack);
-	Stack_Pop(stack);
-	zaloha = zaloha + '<';
-	Stack_Push(stack,zaloha);
+
 
 	
 
@@ -100,11 +126,23 @@ ptrItem* Stack_Top_Ptr( Stack* stack){
 
 	if (Stack_IsEmpty(stack)) //pokud je prazdny nejsou v nem data
 	{
-		return;
+		return NULL;
 	}
 	ptrItem* top = stack->top;
 	return top;
 
 }
 
+void Stack_Print(Stack* stack){
+	ptrItem* tmp = stack->top;
+	printf("-------------STACK PRINT-------- ID types z expression.h \n");
+	while(tmp!=NULL)
+	{
+		printf("%i \n",tmp->data);
+		tmp = tmp->next;
+	}
+	printf("---konec printu-----\n");
+
+
+}
 /* Konec c202.c */
