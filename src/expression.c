@@ -91,7 +91,6 @@ int stack_to_table(Stack *s)
 int get_index_to_table(TokenType type)
 {
     int index = -1;
-    char B = 0;  // enum type
     switch (type)
     {
     case T_ID:
@@ -108,35 +107,27 @@ int get_index_to_table(TokenType type)
         break;
     case T_ADD:
         index = 0;
-        B = '+';
         break;
     case T_SUB:
         index = 0;
-        B = '-';
         break;
     case T_MUL:
         index = 1;
-        B = '*';
         break;
     case T_DIV:
         index = 1;
-        B = '/';
         break;
     case T_DIV_INT:
-        B = 'Z';
         index = 1;
         break;
     case T_PAR_L:
         index = 2;
-        B = '(';
         break;
     case T_PAR_R:
         index = 3;
-        B = ')';
         break;
     case T_EOL:
         index = 5;
-        B='D';
         break;
 
     default:
@@ -269,7 +260,6 @@ int solvedExpression(token_t *token){
     Stack_Push(&s,I_DOLAR);
     
     
- IdentType LastIDENTS = I_DOLAR;
  bool end = false;
  while (!end)
  {
@@ -281,8 +271,6 @@ int solvedExpression(token_t *token){
         b = 5;
         B = I_DOLAR;
         end= true;
-
-        
     }
     else{
         b = get_index_to_table(token->type);
@@ -295,7 +283,6 @@ int solvedExpression(token_t *token){
     case '=':
          Stack_Push(&s,B);
          printf("jsem tu = \n");
-         LastIDENTS = B;
          get_token(token);
         break;
     case '<':
@@ -303,7 +290,6 @@ int solvedExpression(token_t *token){
         Stack_InsertBeforeNonTerm(&s,I_HALT);
         Stack_Push(&s,B);
         Stack_Print(&s); //tisknu
-        LastIDENTS = B;
         token_print(token);
         get_token(token);
        token_print(token);
