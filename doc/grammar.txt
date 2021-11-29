@@ -1,6 +1,7 @@
 <prog> -> global ID : function ( <fdec_args> <f_types> <prog>
 <prog> -> function ID ( <fdef_args> <f_types> <stat> <prog>
 <prog> -> ID ( <args> <prog>
+<prog> -> require STRING <prog>
 <prog> -> EOF
 <fdec_args> -> <type> <fdec_args_n>
 <fdec_args> -> )

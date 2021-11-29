@@ -111,12 +111,29 @@ int test_token(token_t *token);
 #define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
 
 /**
+ * @brief Vytvori dynamicky alokovany string
+ * 
+ * @param int Velikost noveho stringu
+ * @return Ukazatel na vytvoreny string
+ */
+char *string_create(int size);
+
+/**
  * @brief Prida znak na konec dynamickeho stringu
  * 
  * @param str Ukazatel na ukazatel na dynamicky alokovany string
  * @param c Znak pro pridani
  */
 void string_append(char **str, char c);
+
+/**
+ * @brief Kontrola dvou seznamu datovych typu, pri neshode muze byt typ z types2 nil
+ * 
+ * @param types1 Seznam typu ke kontrole
+ * @param types2 Seznam typu ke kontrole
+ * @return 0 pri shode, 1 pri neshode
+ */
+int check_types(char *types1, char *types2);
 
 /**
  * @brief Implementace pravidla <prog>, startovni bod parseru
@@ -197,9 +214,10 @@ int args(token_t *token);
  * @brief Implementace pravidla <args_n>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param types Ukazatel na dynamicky string pro kontrolu parametru
  * @return int Chybovy kod
  */
-int args_n(token_t *token);
+int args_n(token_t *token, char **types);
 
 /**
  * @brief Implementace pravidla <stat>
@@ -255,8 +273,9 @@ int type(token_t *token, bool params);
  * @brief Implementace pravidla <term>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param types Dynamicky string se seznamem typu pro kontrolu
  * @return int Chybovy kod
  */
-int term(token_t *token);
+int term(token_t *token, char **types);
 
 #endif
