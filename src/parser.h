@@ -7,6 +7,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <stdbool.h>
 #include "scanner.h"
 
 /**
@@ -39,13 +40,15 @@ typedef struct funcData {
     
 } funcData_t;
 
+int test_token(token_t *token);
+
 /**
  * @brief Makro ulozi do promenne token novy token, pri chybe vrati chybovy kod lexeru
  * @param token Ukazatel na token
  */
 #define NEXT_TOKEN(token)                                           \
     do{                                                             \
-        if(get_token(token))                                        \
+        if(test_token(token))                                        \
             return ERR_LEX;                                         \
     } while(0)
 
@@ -81,10 +84,39 @@ typedef struct funcData {
 #define CALL_RULE(rule, ...)                                        \
     do{                                                             \
         int err = rule(__VA_ARGS__);                                \
-        if(err)                                                     \
-            return err;                                             \
+        if(err) return err;                                         \
         NEXT_TOKEN(token);                                          \
     } while(0)
+
+/**
+ * @brief Makro zkontroluje jestli je typ keyword a typ keywordu, pokud nesedi, vrati chybu v parseru
+ * @param token Ukazatel na token
+ * @param type Typ keywordu pro kontrolu
+ */
+#define CHECK_KW(token, kw)                                         \
+    do{                                                             \
+        if(!((token)->type == T_KW && (token)->keyword == (kw)))    \
+            return ERR_PARSE;                                       \
+    } while(0) 
+
+#define CALL_RULE_EMPTY(rule)                                       \
+    do{                                                             \
+        bool empty = false;                                         \
+        int err = rule(token, &empty);                              \
+        if(err) return err;                                         \
+        if(!empty)                                                  \
+            NEXT_TOKEN(token);                                      \
+    } while(0)
+
+#define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
+
+/**
+ * @brief Prida znak na konec dynamickeho stringu
+ * 
+ * @param str Ukazatel na ukazatel na dynamicky alokovany string
+ * @param c Znak pro pridani
+ */
+void string_append(char **str, char c);
 
 /**
  * @brief Implementace pravidla <prog>, startovni bod parseru
@@ -130,17 +162,28 @@ int fdef_args_n(token_t *token);
  * @brief Implementace pravidla <f_types>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int f_types(token_t *token);
+int f_types(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <types>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
  * @return int Chybovy kod
  */
-int types(token_t *token);
+int types(token_t *token, bool *empty);
+
+/**
+ * @brief Implementace pravidla <types_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @return int Chybovy kod
+ */
+int types_n(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <args>
@@ -149,6 +192,14 @@ int types(token_t *token);
  * @return int Chybovy kod
  */
 int args(token_t *token);
+
+/**
+ * @brief Implementace pravidla <args_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int args_n(token_t *token);
 
 /**
  * @brief Implementace pravidla <stat>
@@ -167,12 +218,30 @@ int stat(token_t *token);
 int IDs(token_t *token);
 
 /**
- * @brief Implementace pravidla <EXPRs>
+ * @brief Implementace pravidla <IDs_n>
  * 
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
-int EXPRs(token_t *token);
+int IDs_n(token_t *token);
+
+/**
+ * @brief Implementace pravidla <EXPRs>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @return int Chybovy kod
+ */
+int EXPRs(token_t *token, bool *empty);
+
+/**
+ * @brief Implementace pravidla <EXPRs_n>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @return int Chybovy kod
+ */
+int EXPRs_n(token_t *token, bool *empty);
 
 /**
  * @brief Implementace pravidla <type>
@@ -180,6 +249,14 @@ int EXPRs(token_t *token);
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
-int type(token_t *token);
+int type(token_t *token, bool params);
+
+/**
+ * @brief Implementace pravidla <term>
+ * 
+ * @param token Dalsi token pro zpracovani
+ * @return int Chybovy kod
+ */
+int term(token_t *token);
 
 #endif

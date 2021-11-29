@@ -9,7 +9,7 @@ int main(void){
     while(token.type != T_EOF){
         get_token(&token);
         token_print(&token);
-        if(token.type == T_KW || token.type == T_ID){
+        if(token.type == T_KW || token.type == T_ID || token.type == T_STRING){
             token_data_clear(&token);
         }
     }

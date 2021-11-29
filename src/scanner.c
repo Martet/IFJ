@@ -16,7 +16,7 @@ void token_print(token_t *token){
 	printf("type: %i (z scanner.h)\n", token->type);
 	if(token->type == T_KW)
 		printf("keyword: %i\n", token->keyword);
-	if(token->type == T_KW || token->type == T_ID)
+	if(token->type == T_KW || token->type == T_ID || token->type == T_STRING)
 		printf("data: %s\n", token->data);
 	if(token->type == T_INTEGER)
 		printf("integer: %i\n", token->integer);
@@ -157,13 +157,12 @@ int get_token(token_t *token){
 				switch(curr_char){
 					case EOF:
 						token->type = T_EOF;
-						return;
+						return 0;
 					case '\n':
 						token->type = T_EOL;
-						return;	
+						return 0;	
 					case '"':
 						state = STRING_START;
-						ungetc(curr_char, stdin);
 						break;
 					case '#':
 						state = HASH;
@@ -330,7 +329,7 @@ int get_token(token_t *token){
 				}
 				else {
 					token_data_clear(token);
-					return;
+					return 0;
 				}
 				break;
 			
@@ -486,10 +485,71 @@ int get_token(token_t *token){
 				token->type = T_ADD;
 				// Vracim token
 				return 0;
+			
+			case STRING_START:
+				if(curr_char == '"'){
+					// Vstup "" -> initializuji prazdny string
+					token_data_init(token);
+					token->type = T_STRING;
+					return 0;
+				}
+				else {
+					state = STRING_CHECK_ASCII;
+					token_data_init(token);
+					ungetc(curr_char, stdin);
+					break;
+				}
+			
+			case STRING_CHECK_ASCII:
+				if((curr_char >= ' ') && (curr_char != '"')){
+					token_data_append(token, curr_char);
+					state = STRING_VALID;
+					break;
+				}
+				else {
+					// TODO Error?
+				}
+				break;
+			
+			case STRING_VALID:
+				if(curr_char == '\\'){
+					state = STRING_BACKSLASH;
+					token_data_append(token, curr_char);
+					break;
+				}
+				else if(curr_char == '"'){
+					token->type = T_STRING;
+					// Vracim token
+					return 0;
+				}
+				else {
+					state = STRING_CHECK_ASCII;
+					ungetc(curr_char, stdin);
+					break;
+				}
+
+			case STRING_BACKSLASH:
+				if(curr_char == '"' || curr_char == '\\' || curr_char == 'n' || curr_char || 't'){
+					state = STRING_BACKSLASH_CORRECT;
+					ungetc(curr_char, stdin);
+					break;
+				}
+				else {
+					// TODO Error
+					break;
+				}
+			
+			case STRING_BACKSLASH_CORRECT:
+				token_data_append(token, curr_char);
+				state = STRING_VALID;
+				break;
+			
+
+				
 		}
 
 		if(curr_char == EOF){
-			return;
+			return 0;
 		}
 	}
 
