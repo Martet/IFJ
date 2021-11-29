@@ -52,7 +52,6 @@ int check_types(char *types1, char *types2){
 
 int prog(token_t *token){
     PRINT_DEBUG;
-    char *id;
     switch(token->type){
         case T_KW:
             switch(token->keyword){
@@ -75,7 +74,7 @@ int prog(token_t *token){
                     NEXT_CHECK_TYPE(token, T_ID);
                     char *params, *types;
                     bool checkTypes = false;
-                    if(tItem = table_search(global_table, token->data)){
+                    if((tItem = table_search(global_table, token->data))){
                         if(tItem->defined || !tItem->isFunc) //funkce jiz byla definovana, chyba
                             return ERR_SEM_DEF;
                         tItem->defined = true;
@@ -101,6 +100,7 @@ int prog(token_t *token){
                         free(types);
                     }
                     //GENERATE FUNCTION HEADER
+                    //ADD NEW LOCAL SYMTABLE
                     CALL_RULE(stat, token);
                     return prog(token);
 
@@ -115,6 +115,7 @@ int prog(token_t *token){
                     return ERR_PARSE;
             }
             break;
+
         case T_ID: //<prog> -> ID ( <args> <prog>
             if(!(tItem = table_search(global_table, token->data)) || !tItem->isFunc)
                 return ERR_SEM_DEF;
@@ -123,8 +124,10 @@ int prog(token_t *token){
             CALL_RULE(args, token);
             //GENERATE CODE FOR FUNC CALL
             return prog(token);
+
         case T_EOF: //<prog> -> EOF
             return ERR_OK;
+
         default:
             return ERR_PARSE;
     }
@@ -227,7 +230,7 @@ int args(token_t *token){
 int args_n(token_t *token, char **types){
     PRINT_DEBUG;
     if(token->type == T_PAR_R){ //<args_n> -> )
-        if(check_types(tItem->params, types))
+        if(check_types(tItem->params, *types))
             return ERR_SEM_PARAM;
         free(*types);
         return ERR_OK;
@@ -244,10 +247,14 @@ int args_n(token_t *token, char **types){
 int stat(token_t *token){
     PRINT_DEBUG;
     if(token->type == T_ID){
-        if(1/*TODO if type of id from symtable is function*/){ //<stat> -> ID ( <args> <stat>
+        tItem = table_search(global_table, token->data);
+        if(!tItem)
+            return ERR_SEM_DEF;
+        if(tItem->isFunc){ //<stat> -> ID ( <args> <stat>
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
+            //GENERATE CODE FOR FUNCTION CALL
             return stat(token);
         }
         else{ //<stat> -> <IDs> <EXPRs> <stat>
@@ -260,39 +267,70 @@ int stat(token_t *token){
         switch(token->keyword){
             case KW_LOCAL:
                 NEXT_CHECK_TYPE(token, T_ID);
+                //TODO CHECK JESTLI JE V NEJVYSSIM LOKALNIM SYMTABLU, POTOM CHYBA
+                tItem = table_insert(global_table, token->data);
+                tItem->isFunc = false;
                 NEXT_CHECK_TYPE(token, T_COLON);
                 NEXT_TOKEN(token);
                 CALL_RULE(type, token, false);
-                if(token->type == T_EQ){ //<stat> -> local ID : <type> = <EXPRs> <stat>
+                //GENERATE VARIABLE DEFINITION
+                if(token->type == T_EQ){
                     NEXT_TOKEN(token);
-                    CALL_RULE_EMPTY(EXPRs);
+                    if(token->type == T_ID){
+                        if(!(tItem = table_search(global_table/*NEBO LOKALNI*/, token->data)))
+                            return ERR_SEM_DEF;
+                        if(tItem->isFunc){ //<stat> -> local ID : <type> = ID ( <args> <stat>
+                            NEXT_CHECK_TYPE(token, T_PAR_L);
+                            NEXT_TOKEN(token);
+                            CALL_RULE(args, token);
+                            //GENERATE FUNCTION CALL AND SAVE RESULT
+                        }
+                        else{ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
+                            //PARSE EXPRESSION AND SAVE TO VARIABLE
+                        }
+                    }
+                    else{ ////<stat> -> local ID : <type> = EXPR <stat> (starting with term)
+                        //PARSE EXPRESSION AND SAVE TO VARIABLE
+                    }
                 }
                 else //<stat> -> local ID : <type> <stat>
                     NEXT_TOKEN(token);
                 return stat(token);
+
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
                 //PARSE EXPRESSION
+                //GENERATE IF HEADER
                 NEXT_CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
+                //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
                 CHECK_KW(token, KW_ELSE);
                 NEXT_TOKEN(token);
+                //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
                 return stat(token);
+
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
                 //PARSE EXPRESSION
                 NEXT_CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
+                //GENERATE WHILE HEADER
+                //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
                 return stat(token);
+
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
                 NEXT_TOKEN(token);
                 CALL_RULE_EMPTY(EXPRs);
                 return stat(token);
+
             case KW_END: //<stat> -> end
+                //POP LOCAL STACKFRAME
+                //GENERATE RETURN FOR WHATEVER BLOCK WE ARE IN (THIS SHIT WILL SUCK)
                 return ERR_OK;
+
             default:
                 return ERR_PARSE;
         }
@@ -383,9 +421,10 @@ int type(token_t *token, bool params){
 
 int term(token_t *token, char **types){
     PRINT_DEBUG;
+    tableItem_t *item;
     switch(token->type){ //TODO
         case T_ID:
-            tableItem_t *item = table_search(global_table/*TADY BUDE VYHLEDAVANI V LOKALNICH TABULKACH*/, token->data);
+            item = table_search(global_table/*TADY BUDE VYHLEDAVANI V LOKALNICH TABULKACH*/, token->data);
             if(!item)
                 return ERR_SEM_DEF;
             if(item->isFunc)

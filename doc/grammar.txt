@@ -22,7 +22,8 @@
 <args_n> -> )
 <stat> -> ID ( <args> <stat>
 <stat> -> local ID : <type> <stat>
-<stat> -> local ID : <type> = <EXPRs> <stat>
+<stat> -> local ID : <type> = EXPR <stat>
+<stat> -> local ID : <type> = ID ( <args> <stat>
 <stat> -> <IDs> <EXPRs> <stat>
 <stat> -> if EXPR then <stat> else <stat> <stat>
 <stat> -> while EXPR do <stat> <stat>
