@@ -41,31 +41,13 @@ int stack_to_table(Stack *s)
     int index = -1;
     switch (A)
     {
-    case I_ID:
-        index = 4;
-        break;
-    case I_NUMBER:
-        index = 4;
-        break;
-    case I_STRING:
-        index = 4;
-        break;
-    case I_INTEGER:
+    case I_ID: case I_NUMBER: case I_STRING: case I_INTEGER:
         index = 4;
         break;                
-    case I_PLUS:
+    case I_PLUS: case I_MINUS:
         index = 0;
         break;
-    case I_MINUS:
-        index = 0;
-        break;
-    case I_MULTIPLAY:
-        index = 1;
-        break;
-    case I_DIVIDE:
-        index = 1;
-        break;
-    case I_DIVIDE_INT:
+    case I_MULTIPLAY: case I_DIVIDE:  case I_DIVIDE_INT:
         index = 1;
         break;
     case I_PAR_L:
@@ -77,14 +59,9 @@ int stack_to_table(Stack *s)
     case I_DOLAR:
         index = 5;
         break;
-
-
-         
     default:
-
         break;
     }
-
     return index;
 
 }
@@ -93,31 +70,13 @@ int get_index_to_table(TokenType type)
     int index = -1;
     switch (type)
     {
-    case T_ID:
+    case T_ID: case T_NUMBER: case T_INTEGER: case T_STRING:
         index = 4;
         break;
-    case T_NUMBER:
-        index = 4;
-        break;
-    case T_INTEGER:
-        index = 4;
-        break;
-    case T_STRING:
-        index = 4;
-        break;
-    case T_ADD:
+    case T_ADD:  case T_SUB:
         index = 0;
         break;
-    case T_SUB:
-        index = 0;
-        break;
-    case T_MUL:
-        index = 1;
-        break;
-    case T_DIV:
-        index = 1;
-        break;
-    case T_DIV_INT:
+    case T_MUL:  case T_DIV:  case T_DIV_INT:
         index = 1;
         break;
     case T_PAR_L:
@@ -129,12 +88,9 @@ int get_index_to_table(TokenType type)
     case T_EOL:
         index = 5;
         break;
-
     default:
         break;
     }
-
-    
     return index;
 
 }
@@ -201,11 +157,6 @@ void reduce(Stack* stack)
     {
         topik = topik->next;
         cnt++;
-        
-
-        
-
-
     }
     if (cnt==1 && ( stack->top->data==I_ID || stack->top->data==I_NUMBER  || stack->top->data==I_STRING || stack->top->data==I_INTEGER))
     {
@@ -246,84 +197,72 @@ void reduce(Stack* stack)
         //generace operace stack->top->next->data
     }
 
-    
-    
-    
-
 
 }
 
-int solvedExpression(token_t *token){
-
-
+int solvedExpression(token_t *token)
+{
     Stack_Init(&s);
     Stack_Push(&s,I_DOLAR);
-    
-    
- bool end = false;
- while (!end)
- {
-     int a = stack_to_table(&s);
-     int b;
-     IdentType B;
-    if (token->type == T_EOL || token->type == T_EOF)
+    bool end = false;
+    while (!end)
     {
-        b = 5;
-        B = I_DOLAR;
-        end= true;
-    }
-    else{
-        b = get_index_to_table(token->type);
-        B = TokentoIden(token->type);
-    }
+        int a = stack_to_table(&s);
+        int b;
+        IdentType B;
+        if (token->type == T_EOL || token->type == T_EOF)
+        {
+            b = 5;
+            B = I_DOLAR;
+            end= true;
+        }
+        else
+        {
+            b = get_index_to_table(token->type);
+            B = TokentoIden(token->type);
+        }
 
-      printf("  \n indexy  %d , %d \n",a,b);
-    switch (Precedence_table[a][b])
-    {
-    case '=':
-         Stack_Push(&s,B);
-         printf("jsem tu = \n");
-         get_token(token);
-        break;
-    case '<':
-        printf("jsem tu <  ");
-        Stack_InsertBeforeNonTerm(&s,I_HALT);
-        Stack_Push(&s,B);
-        Stack_Print(&s); //tisknu
-        token_print(token);
-        get_token(token);
-       token_print(token);
-        break;
-    case '>':
-         printf("jsem tu >  reduction \n ");
-
-         
-         reduce(&s);
-         Stack_Print(&s);
-        break;
-    case 'D':
-        printf("redukujuu");
-        reduce(&s);
-        break;
-    default:
-        break;
-    }
+        printf("  \n indexy  %d , %d \n",a,b);
+        switch (Precedence_table[a][b])
+        {
+            case '=':
+                Stack_Push(&s,B);
+                printf("jsem tu = \n");
+                get_token(token);
+                break;
+            case '<':
+                printf("jsem tu <  ");
+                Stack_InsertBeforeNonTerm(&s,I_HALT);
+                Stack_Push(&s,B);
+                Stack_Print(&s); //tisknu
+                token_print(token);
+                get_token(token);
+                token_print(token);
+                break;
+            case '>':
+                printf("jsem tu >  reduction \n "); 
+                reduce(&s);
+                Stack_Print(&s);
+                break;
+            case 'D':
+                printf("redukujuu");
+                reduce(&s);
+                break;
+            default:
+                break;
+        }
     
- }
- printf("konecna vystupovat \n");
- Stack_Print(&s);
-
-int a = stack_to_table(&s);
-while (a != 5)
-{
-    reduce(&s);
-    a = stack_to_table(&s);
+    }
+    printf("konecna vystupovat \n");
     Stack_Print(&s);
-}
-
-
-
-  Stack_Destroy(&s);
- return 0;
+    int a = stack_to_table(&s);
+    while (a != 5)
+    {
+        reduce(&s);
+        a = stack_to_table(&s);
+        Stack_Print(&s);
+    }
+    Stack_Destroy(&s);
+    return 0;
  
 }
