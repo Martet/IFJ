@@ -9,6 +9,7 @@
 #include <string.h>
 #include "scanner.h"
 #include "parser.h"
+#include "stack.h"
 #include "symtable.h"
 
 int test_token(token_t *token){
