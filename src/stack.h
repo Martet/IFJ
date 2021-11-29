@@ -45,7 +45,6 @@ int Stack_IsFull( Stack* stack );
  * @brief Funkce vraci hodnotu vrcholu zásobniku
  *
  * @param stack Ukazatel na zásobník
- * @param value Ukazatel na cílovou proměnnou
  */
 int Stack_Top( Stack* stack);
 
@@ -59,17 +58,33 @@ void Stack_Pop( Stack* stack );
 /**
  * @brief Vlozeni noveho prvku na vrchol zasobniku
  * @param stack Ukazatel na zásobník
- * @param data string k vložení
+ * @param data int k vložení
  */
 void Stack_Push( Stack* stack, int value);
 
+/**
+ * @brief Zniceni zasobniku, free pameti
+ * @param stack Ukazatel na zásobník
+ */
 void Stack_Destroy( Stack* stack);
 
-
+/**
+ * @brief Vraci ptrItem na vrchol zasobniku
+ * @param stack Ukazatel na zásobník
+ */
 ptrItem* Stack_Top_Ptr( Stack* stack);
 
+/**
+ * @brief Pomocna funkce na vytiksnuti obsahu zasobniku
+ * @param stack Ukazatel na zásobník
+ */
 void Stack_Print( Stack* stack);
 
+/**
+ * @brief Pomocna funkce ktera vlozi znak pred NON_TERM na zasobniku
+ * @param stack Ukazatel na zásobník
+ * @param data int k vložení
+ */
 int Stack_InsertBeforeNonTerm(Stack *stack, int data);
 
 #endif
