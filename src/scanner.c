@@ -92,7 +92,7 @@ int is_keyword(token_t *token){
 	}
 	else if(strcmp("local", token->data) == 0){
 		token->type = T_KW;
-		token->keyword = KW_NIL;
+		token->keyword = KW_LOCAL;
 		return 1;
 	}
 	else if(strcmp("nil", token->data) == 0){
@@ -249,8 +249,8 @@ int get_token(token_t *token){
 					ungetc(curr_char, stdin);
 					return 0;
 				}
-				is_keyword(token);
 				token_data_append(token,curr_char);
+				is_keyword(token);
 				break;
 
 			case INTEGER:
