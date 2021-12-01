@@ -273,7 +273,9 @@ int get_token(token_t *token){
 				}
 				// Jiny znak, vratim ho do stdin
 				else {
+
 					ungetc(curr_char, stdin);
+					return 0;
 				}
 				break;
 

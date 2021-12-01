@@ -4,6 +4,7 @@
  * @author Petr Hýbl <xhyblp01@stud.fit.vutbr.cz>
  */
 #include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
 #include "stack.h"
 #include "scanner.h"
@@ -27,15 +28,15 @@ const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
 
 int stack_to_table(Stack *s)
 {
-    IdentType A = Stack_Top(s);
+    IdentType A = Stack_Top_Type(s);
     if (A == I_NON_TERM || A == I_HALT)
     {
         ptrItem* topicek = s->top;
-        while (topicek->data == I_NON_TERM || topicek->data == I_HALT )
+        while (topicek->type == I_NON_TERM || topicek->type == I_HALT )
         {
             topicek = topicek->next;
         }
-        A= topicek->data;
+        A= topicek->type;
     }
     
     int index = -1;
@@ -142,60 +143,107 @@ void reduce(Stack* stack)
 {
     ptrItem* topik = stack->top;
     int cnt = 0;
-    if (topik->data == I_PAR_R && topik->next->next->data == I_PAR_L && topik->next->data == I_NON_TERM)
+    if (topik->type == I_PAR_R && topik->next->next->type == I_PAR_L && topik->next->type == I_NON_TERM)
     {
         Stack_Pop(stack);
+        char* data = Stack_Top_Data(stack);
         Stack_Pop(stack);
+
         Stack_Pop(stack);
+
         Stack_Pop(stack);
-        Stack_Push(stack,I_NON_TERM);
+        Stack_Push(stack,I_NON_TERM,data);
         printf("(E) --> E \n");
         return;
     }
     
-    while (topik->data != I_HALT)
+    while (topik->type != I_HALT) //<
     {
         topik = topik->next;
         cnt++;
     }
-    if (cnt==1 && ( stack->top->data==I_ID || stack->top->data==I_NUMBER  || stack->top->data==I_STRING || stack->top->data==I_INTEGER))
+    if (cnt==1 && ( stack->top->type==I_ID || stack->top->type==I_NUMBER  || stack->top->type==I_STRING || stack->top->type==I_INTEGER))
     {
+        char* data = Stack_Top_Data(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
-        Stack_Push(stack,I_NON_TERM);
+        Stack_Push(stack,I_NON_TERM,data);
         printf("E \n");
         //generace E
     }
-    if (cnt==3 && stack->top->data==I_NON_TERM && stack->top->next->data == I_PLUS && stack->top->next->next->data == I_NON_TERM)
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_PLUS && stack->top->next->next->type == I_NON_TERM)
     {
+        char* data = NULL;
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
-        Stack_Push(stack,I_NON_TERM);
+        Stack_Push(stack,I_NON_TERM,data);
         printf("E + E --> E \n");
         //generace operace stack->top->next->data
     }
-    if (cnt==3 && stack->top->data==I_NON_TERM && stack->top->next->data == I_MULTIPLAY && stack->top->next->next->data == I_NON_TERM)
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_MULTIPLAY && stack->top->next->next->type == I_NON_TERM)
     {
+        char* data = NULL;
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
-        Stack_Push(stack,I_NON_TERM);
+        Stack_Push(stack,I_NON_TERM,data);
         printf("E * E --> E \n");
         //generace operace stack->top->next->data
     }
-    if (cnt==3 && stack->top->data==I_NON_TERM && stack->top->next->data == I_MINUS && stack->top->next->next->data == I_NON_TERM)
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_MINUS && stack->top->next->next->type == I_NON_TERM)
     {
+        char* data = NULL;
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
-        Stack_Push(stack,I_NON_TERM);
+        Stack_Push(stack,I_NON_TERM,data);
         printf("E - E --> E \n");
         //generace operace stack->top->next->data
     }
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_DIVIDE && stack->top->next->next->type == I_NON_TERM)
+    {
+        char* data = NULL;
+        if (stack->top->data[0] == '0')
+        {
+            printf("pico delis nulou");
+            exit(9);
+        }
+        
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Push(stack,I_NON_TERM,data);
+        printf("E / E --> E \n");
+        //generace operace stack->top->next->data
+    }
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_DIVIDE_INT && stack->top->next->next->type == I_NON_TERM)
+    {
+        char* data = NULL;
+        if (stack->top->data[0] == '0')
+        {
+            printf("pico delis nulou");
+            exit(9);
+        }
+        
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Push(stack,I_NON_TERM,data);
+        printf("E // E --> E \n");
+        //generace operace stack->top->next->data
+    }
+    else 
+    {
+        printf("hello chyba");
+        exit(6);
+    }
+    
 
 
 }
@@ -203,37 +251,46 @@ void reduce(Stack* stack)
 int solvedExpression(token_t *token)
 {
     Stack_Init(&s);
-    Stack_Push(&s,I_DOLAR);
+    Stack_Push(&s,I_DOLAR,NULL);
     bool end = false;
     while (!end)
     {
         int a = stack_to_table(&s);
         int b;
-        IdentType B;
+        IdentType Btype;
+        char Bdata[15];
         if (token->type == T_EOL || token->type == T_EOF)
         {
             b = 5;
-            B = I_DOLAR;
+            Btype = I_DOLAR;
+          //  Bdata = NULL;
             end= true;
         }
         else
         {
             b = get_index_to_table(token->type);
-            B = TokentoIden(token->type);
-        }
+            Btype = TokentoIden(token->type);
+            if(Btype == I_INTEGER)
+            {
+                printf("%d",token->integer);
+                sprintf(Bdata, "%i", token->integer);
+            }
 
+            
+
+        }
         printf("  \n indexy  %d , %d \n",a,b);
         switch (Precedence_table[a][b])
         {
             case '=':
-                Stack_Push(&s,B);
+                Stack_Push(&s,Btype,Bdata);
                 printf("jsem tu = \n");
                 get_token(token);
                 break;
             case '<':
                 printf("jsem tu <  ");
-                Stack_InsertBeforeNonTerm(&s,I_HALT);
-                Stack_Push(&s,B);
+                Stack_InsertBeforeNonTerm(&s,I_HALT,NULL); //<
+                Stack_Push(&s,Btype,Bdata);
                 Stack_Print(&s); //tisknu
                 token_print(token);
                 get_token(token);
@@ -249,6 +306,8 @@ int solvedExpression(token_t *token)
                 reduce(&s);
                 break;
             default:
+                printf("haha chyba");
+                exit(6);
                 break;
         }
     
@@ -262,7 +321,9 @@ int solvedExpression(token_t *token)
         a = stack_to_table(&s);
         Stack_Print(&s);
     }
+    printf("konecna vystupovat po while \n");
     Stack_Destroy(&s);
+        printf("konecna vystupovat po destroy \n");
     return 0;
  
 }

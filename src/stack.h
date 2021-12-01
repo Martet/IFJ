@@ -6,7 +6,8 @@
 typedef struct item {
 
 	struct item *next;
-	int data;
+	int type;
+	char* data;
 }ptrItem;
 
 
@@ -42,11 +43,18 @@ bool Stack_IsEmpty( Stack* stack);
 int Stack_IsFull( Stack* stack );
 
 /**
- * @brief Funkce vraci hodnotu vrcholu zásobniku
+ * @brief Funkce vraci typ na vrcholu zásobniku
  *
  * @param stack Ukazatel na zásobník
  */
-int Stack_Top( Stack* stack);
+int Stack_Top_Type( Stack* stack);
+
+/**
+ * @brief Funkce vraci data na vrcholu
+ *
+ * @param stack Ukazatel na zásobník
+ */
+char* Stack_Top_Data( Stack* stack);
 
 /**
  * @brief Odstraní vrcholový prvek zásobníku
@@ -58,9 +66,10 @@ void Stack_Pop( Stack* stack );
 /**
  * @brief Vlozeni noveho prvku na vrchol zasobniku
  * @param stack Ukazatel na zásobník
- * @param data int k vložení
+ * @param value int k vložení
+ * @param data data ulozena v tokenu
  */
-void Stack_Push( Stack* stack, int value);
+void Stack_Push( Stack* stack, int value,char* data);
 
 /**
  * @brief Zniceni zasobniku, free pameti
@@ -83,8 +92,8 @@ void Stack_Print( Stack* stack);
 /**
  * @brief Pomocna funkce ktera vlozi znak pred NON_TERM na zasobniku
  * @param stack Ukazatel na zásobník
- * @param data int k vložení
+ * @param type int k vložení
  */
-int Stack_InsertBeforeNonTerm(Stack *stack, int data);
+int Stack_InsertBeforeNonTerm(Stack *stack, int type,char* data);
 
 #endif
