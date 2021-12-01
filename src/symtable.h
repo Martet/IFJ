@@ -11,7 +11,14 @@ typedef struct TableItem {
     char *key;
 } tableItem_t;
 
-typedef struct Symtable symtable_t;
+typedef struct Symtable{
+    struct TableItem item;
+    struct Symtable *lptr;
+    struct Symtable *rptr;
+} symtable_t;
+
+tableItem_t *table_init();
+
 
 /**
  * @brief Vyhledani polozky v tabulce symbolu
