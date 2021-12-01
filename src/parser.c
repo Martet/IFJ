@@ -50,6 +50,31 @@ int check_types(char *types1, char *types2){
     return 0;
 }
 
+itemList_t *list_init(){
+    itemList_t *list = malloc(sizeof(itemList_t));
+    if(!list) 
+        exit(99);
+    list->item = NULL;
+    list->next = NULL;
+    return list;
+}
+
+void list_append(itemList_t *list, tableItem_t *item){
+    if(!list->item)
+        list->item = item;
+    else{
+        while(list->next)
+            list = list->next;
+        if(list->item){
+            list->next = list_init();
+            list->next->item = item;
+        }
+        else{
+            list->item = item;
+        }
+    }
+}
+
 int prog(token_t *token){
     PRINT_DEBUG;
     switch(token->type){
@@ -258,8 +283,11 @@ int stat(token_t *token){
             return stat(token);
         }
         else{ //<stat> -> <IDs> <EXPRs> <stat>
-            CALL_RULE(IDs, token);
-            CALL_RULE_EMPTY(EXPRs);
+            itemList_t *list = list_init();
+            int count = 0;
+            CALL_RULE(IDs, token, list); //itemy kazde promenne se ulozi do listu
+            CALL_RULE_EMPTY(EXPRs, &count);
+            //GENERATE CODE TO ASSIGN COUNT VALUES IN LIST (SEMANTIC CHECKS NEEDED)
             return stat(token);
         }
     }
@@ -323,11 +351,13 @@ int stat(token_t *token){
 
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
                 NEXT_TOKEN(token);
-                CALL_RULE_EMPTY(EXPRs);
+                int count = 0;
+                CALL_RULE_EMPTY(EXPRs, &count);
+                //GENERATE CODE
                 return stat(token);
 
             case KW_END: //<stat> -> end
-                //POP LOCAL STACKFRAME
+                //POP LOCAL STACKFRAME AND SYMTABLE
                 //GENERATE RETURN FOR WHATEVER BLOCK WE ARE IN (THIS SHIT WILL SUCK)
                 return ERR_OK;
 
@@ -339,51 +369,65 @@ int stat(token_t *token){
         return ERR_PARSE;
 }
 
-int IDs(token_t *token){
+int IDs(token_t *token, itemList_t *list){
     PRINT_DEBUG;
     if(token->type == T_ID){ //<IDs> -> ID <IDs_n>
+        tItem = table_search(global_table/*LOCAL TABLES ONLY*/, token->data);
+        if(!tItem)
+            return ERR_SEM_DEF;
+        list_append(list, tItem);
         NEXT_TOKEN(token);
-        return IDs_n(token);
+        return IDs_n(token, list);
     }
     else
         return ERR_PARSE;
 }
 
-int IDs_n(token_t *token){
+int IDs_n(token_t *token, itemList_t *list){
     PRINT_DEBUG;
     if(token->type == T_EQ) //<IDs_n> -> =
         return ERR_OK;
     else if(token->type == T_COMMA){ //<IDs_n> -> , ID <IDs_n>
         NEXT_CHECK_TYPE(token, T_ID);
+        tItem = table_search(global_table/*LOCAL TABLES ONLY*/, token->data);
+        if(!tItem)
+            return ERR_SEM_DEF;
+        list_append(list, tItem);
         NEXT_TOKEN(token);
-        return IDs_n(token);
+        return IDs_n(token, list);
     }
     else
         return ERR_PARSE;
 }
 
-int EXPRs(token_t *token, bool *empty){
+int EXPRs(token_t *token, bool *empty, int *count){
     PRINT_DEBUG;
-    if(token->type == T_ID){ //<EXPRs> -> ID ( <args>
-        NEXT_CHECK_TYPE(token, T_PAR_L);
-        NEXT_TOKEN(token);
-        CALL_RULE(args, token);
-        return ERR_OK;
+    if(token->type == T_ID){
+        tItem = table_search(global_table, token->data);
+        if(tItem){ ////<EXPRs> -> ID ( <args>
+            NEXT_CHECK_TYPE(token, T_PAR_L);
+            NEXT_TOKEN(token);
+            CALL_RULE(args, token);
+            //CALL FUNCTION
+            *count = strlen(tItem->types);
+            return ERR_OK;
+        }
     }
-    else{ //<EXPRs> -> EXPR <EXPRs_n>
-        //PARSE EXPRESSION
-        NEXT_TOKEN(token);
-        return EXPRs_n(token, empty);
-    }
+    //<EXPRs> -> EXPR <EXPRs_n>
+    //PARSE EXPRESSION
+    NEXT_TOKEN(token);
+    (*count)++;
+    return EXPRs_n(token, empty, count);
 }
 
-int EXPRs_n(token_t *token, bool *empty){
+int EXPRs_n(token_t *token, bool *empty, int *count){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
         //PARSE EXPRESSION
         NEXT_TOKEN(token);
-        return EXPRs_n(token, empty);
+        (*count)++;
+        return EXPRs_n(token, empty, count);
     }
     else{ //<EXPRs_n> -> e
         *empty = true;

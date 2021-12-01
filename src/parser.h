@@ -26,19 +26,10 @@ typedef enum errCode {
     ERR_ZERO
 } ErrCode;
 
-//Tady budou struktury pro ulozeni dat funkce (typ, argumenty...)
-//TODO
-typedef enum funcType {
-    FUNC_DEF,
-    FUNC_DEC,
-    FUNC_CALL
-} FuncType;
-
-typedef struct funcData {
-    FuncType type;
-    int argc;
-    
-} funcData_t;
+typedef struct ItemList {
+    struct ItemList *next;
+    tableItem_t *item;
+} itemList_t;
 
 int test_token(token_t *token);
 
@@ -99,10 +90,10 @@ int test_token(token_t *token);
             return ERR_PARSE;                                       \
     } while(0) 
 
-#define CALL_RULE_EMPTY(rule)                                       \
+#define CALL_RULE_EMPTY(rule, ...)                                  \
     do{                                                             \
         bool empty = false;                                         \
-        int err = rule(token, &empty);                              \
+        int err = rule(token, &empty, ## __VA_ARGS__);              \
         if(err) return err;                                         \
         if(!empty)                                                  \
             NEXT_TOKEN(token);                                      \
@@ -134,6 +125,21 @@ void string_append(char **str, char c);
  * @return 0 pri shode, 1 pri neshode
  */
 int check_types(char *types1, char *types2);
+
+/**
+ * @brief Inicializace linked listu symtable itemu
+ * 
+ * @return Ukazatel na nove vytvoreny list
+ */
+itemList_t *list_init();
+
+/**
+ * @brief Pridani polozky na konec listu
+ * 
+ * @param list List pro upravu
+ * @param item Polozka pro pridani
+ */
+void list_append(itemList_t *list, tableItem_t *item);
 
 /**
  * @brief Implementace pravidla <prog>, startovni bod parseru
@@ -231,35 +237,39 @@ int stat(token_t *token);
  * @brief Implementace pravidla <IDs>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param list Ukazatel na list, kam se budou pridavat promenne
  * @return int Chybovy kod
  */
-int IDs(token_t *token);
+int IDs(token_t *token, itemList_t *list);
 
 /**
  * @brief Implementace pravidla <IDs_n>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param list Ukazatel na list, kam se budou pridavat promenne
  * @return int Chybovy kod
  */
-int IDs_n(token_t *token);
+int IDs_n(token_t *token, itemList_t *list);
 
 /**
  * @brief Implementace pravidla <EXPRs>
  * 
  * @param token Dalsi token pro zpracovani
  * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @param count Ukazatel na promennou, kam bude nastaven pocet zpracovanych vyrazu
  * @return int Chybovy kod
  */
-int EXPRs(token_t *token, bool *empty);
+int EXPRs(token_t *token, bool *empty, int *count);
 
 /**
  * @brief Implementace pravidla <EXPRs_n>
  * 
  * @param token Dalsi token pro zpracovani
  * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @param count Ukazatel na promennou, kam bude nastaven pocet zpracovanych vyrazu
  * @return int Chybovy kod
  */
-int EXPRs_n(token_t *token, bool *empty);
+int EXPRs_n(token_t *token, bool *empty, int *count);
 
 /**
  * @brief Implementace pravidla <type>
