@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
-TARGETS=scanner.o parser.o main.o stack.o expression.o
+TARGETS=scanner.o parser.o main.o stack.o expression.o symtable.o
 
 
 all: ifj
