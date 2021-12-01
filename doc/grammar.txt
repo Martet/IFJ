@@ -1,6 +1,7 @@
 <prog> -> global ID : function ( <fdec_args> <f_types> <prog>
 <prog> -> function ID ( <fdef_args> <f_types> <stat> <prog>
 <prog> -> ID ( <args> <prog>
+<prog> -> require STRING <prog>
 <prog> -> EOF
 <fdec_args> -> <type> <fdec_args_n>
 <fdec_args> -> )
@@ -21,7 +22,8 @@
 <args_n> -> )
 <stat> -> ID ( <args> <stat>
 <stat> -> local ID : <type> <stat>
-<stat> -> local ID : <type> = <EXPRs> <stat>
+<stat> -> local ID : <type> = EXPR <stat>
+<stat> -> local ID : <type> = ID ( <args> <stat>
 <stat> -> <IDs> <EXPRs> <stat>
 <stat> -> if EXPR then <stat> else <stat> <stat>
 <stat> -> while EXPR do <stat> <stat>

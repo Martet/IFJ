@@ -22,6 +22,14 @@ int test_token(token_t *token){
 symtable_t *global_table;
 tableItem_t *tItem;
 
+char *string_create(int size){
+    char *str = malloc(size);
+    if(!str)
+        exit(99);
+    str[0] = 0;
+    return str;
+}
+
 void string_append(char **str, char c){
     int len = strlen(*str);
     *str = realloc(*str, len + 2);
@@ -31,9 +39,44 @@ void string_append(char **str, char c){
     (*str)[len + 1] = 0;
 }
 
+int check_types(char *types1, char *types2){
+    int len1 = strlen(types1), len2 = strlen(types2);
+    if(len1 != len2)
+        return 1;
+    for(int i = 0; i < len1; i++){
+        if(types1[i] != types2[i] && types2[i] != 'n')
+            return 1;
+    }
+    return 0;
+}
+
+itemList_t *list_init(){
+    itemList_t *list = malloc(sizeof(itemList_t));
+    if(!list) 
+        exit(99);
+    list->item = NULL;
+    list->next = NULL;
+    return list;
+}
+
+void list_append(itemList_t *list, tableItem_t *item){
+    if(!list->item)
+        list->item = item;
+    else{
+        while(list->next)
+            list = list->next;
+        if(list->item){
+            list->next = list_init();
+            list->next->item = item;
+        }
+        else{
+            list->item = item;
+        }
+    }
+}
+
 int prog(token_t *token){
     PRINT_DEBUG;
-    char *id;
     switch(token->type){
         case T_KW:
             switch(token->keyword){
@@ -44,6 +87,8 @@ int prog(token_t *token){
                     tItem = table_insert(global_table, token->data);
                     tItem->defined = false;
                     tItem->isFunc = true;
+                    tItem->params = string_create(1);
+                    tItem->types = string_create(1);
                     NEXT_CHECK_TYPE(token, T_COLON);
                     NEXT_CHECK_KW(token, KW_FUNCTION);
                     NEXT_CHECK_TYPE(token, T_PAR_L);
@@ -51,30 +96,69 @@ int prog(token_t *token){
                     CALL_RULE(fdec_args, token);
                     CALL_RULE_EMPTY(f_types);
                     return prog(token);
+
                 case KW_FUNCTION: //<prog> -> function ID ( <fdef_args> <f_types> <stat> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
-                    //id = token->data; 
-                    //CREATE NEW FUNCTION
-                    //ADD FUNCTION TO GLOBAL SYMTABLE
+                    char *params, *types;
+                    bool checkTypes = false;
+                    if((tItem = table_search(global_table, token->data))){
+                        if(tItem->defined || !tItem->isFunc) //funkce jiz byla definovana, chyba
+                            return ERR_SEM_DEF;
+                        tItem->defined = true;
+                        checkTypes = true;
+                        params = string_create(strlen(tItem->types) + 1);
+                        types = string_create(strlen(tItem->types) + 1);
+                        strcpy(params, tItem->params);
+                        strcpy(types, tItem->types);
+                        tItem->params[0] = 0;
+                        tItem->types[0] = 0;
+                    }
+                    else{
+                        tItem = table_insert(global_table, token->data);
+                        tItem->defined = true;
+                        tItem->isFunc = true;
+                        tItem->params = string_create(1);
+                        tItem->types = string_create(1);
+                    }
                     NEXT_CHECK_TYPE(token, T_PAR_L);
                     NEXT_TOKEN(token);
                     CALL_RULE(fdef_args, token);
                     CALL_RULE_EMPTY(f_types);
+                    if(checkTypes){
+                        if(strcmp(tItem->params, params) || strcmp(tItem->types, types))
+                            return ERR_SEM_DEF; //typy parametru nebo navratovych hodnot nesedi
+                        free(params);
+                        free(types);
+                    }
+                    //GENERATE FUNCTION HEADER
+                    //ADD NEW LOCAL SYMTABLE
                     CALL_RULE(stat, token);
                     return prog(token);
+
+                case KW_REQUIRE: //<prog> -> require STRING <prog>
+                    NEXT_CHECK_TYPE(token, T_STRING);
+                    if(strcmp(token->data, "ifj21"))
+                        return ERR_PARSE;
+                    NEXT_TOKEN(token);
+                    return prog(token);
+
                 default:
                     return ERR_PARSE;
             }
             break;
+
         case T_ID: //<prog> -> ID ( <args> <prog>
-            //id = token->data;
+            if(!(tItem = table_search(global_table, token->data)) || !tItem->isFunc)
+                return ERR_SEM_DEF;
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
             //GENERATE CODE FOR FUNC CALL
             return prog(token);
+
         case T_EOF: //<prog> -> EOF
             return ERR_OK;
+
         default:
             return ERR_PARSE;
     }
@@ -108,6 +192,9 @@ int fdef_args(token_t *token){
     if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
+        tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
+        tItem->isFunc = false;
+        tItem->types = string_create(1);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         CALL_RULE(type, token, true);
@@ -123,6 +210,9 @@ int fdef_args_n(token_t *token){
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
         NEXT_CHECK_TYPE(token, T_ID);
+        tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
+        tItem->isFunc = false;
+        tItem->types = string_create(1);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         CALL_RULE(type, token, true);
@@ -168,19 +258,24 @@ int args(token_t *token){
     if(token->type == T_PAR_R) //<args> -> )
         return ERR_OK;
     else{ //<args> -> <term> <args_n>
-        CALL_RULE(term, token);
-        return args_n(token);
+        char *types = string_create(1);
+        CALL_RULE(term, token, &types);
+        return args_n(token, &types);
     }
 }
 
-int args_n(token_t *token){
+int args_n(token_t *token, char **types){
     PRINT_DEBUG;
-    if(token->type == T_PAR_R) //<args_n> -> )
+    if(token->type == T_PAR_R){ //<args_n> -> )
+        if(check_types(tItem->params, *types))
+            return ERR_SEM_PARAM;
+        free(*types);
         return ERR_OK;
+    }
     else if (token->type == T_COMMA){ //<args_n> -> , <term> <args_n>
         NEXT_TOKEN(token);
-        CALL_RULE(term, token);
-        return args_n(token);
+        CALL_RULE(term, token, types);
+        return args_n(token, types);
     }
     else
         return ERR_PARSE;
@@ -189,15 +284,22 @@ int args_n(token_t *token){
 int stat(token_t *token){
     PRINT_DEBUG;
     if(token->type == T_ID){
-        if(1/*TODO if type of id from symtable is function*/){ //<stat> -> ID ( <args> <stat>
+        tItem = table_search(global_table, token->data);
+        if(!tItem)
+            return ERR_SEM_DEF;
+        if(tItem->isFunc){ //<stat> -> ID ( <args> <stat>
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
+            //GENERATE CODE FOR FUNCTION CALL
             return stat(token);
         }
         else{ //<stat> -> <IDs> <EXPRs> <stat>
-            CALL_RULE(IDs, token);
-            CALL_RULE_EMPTY(EXPRs);
+            itemList_t *list = list_init();
+            int count = 0;
+            CALL_RULE(IDs, token, list); //itemy kazde promenne se ulozi do listu
+            CALL_RULE_EMPTY(EXPRs, &count);
+            //GENERATE CODE TO ASSIGN COUNT VALUES IN LIST (SEMANTIC CHECKS NEEDED)
             return stat(token);
         }
     }
@@ -205,39 +307,72 @@ int stat(token_t *token){
         switch(token->keyword){
             case KW_LOCAL:
                 NEXT_CHECK_TYPE(token, T_ID);
+                //TODO CHECK JESTLI JE V NEJVYSSIM LOKALNIM SYMTABLU, POTOM CHYBA
+                tItem = table_insert(global_table, token->data);
+                tItem->isFunc = false;
                 NEXT_CHECK_TYPE(token, T_COLON);
                 NEXT_TOKEN(token);
                 CALL_RULE(type, token, false);
-                if(token->type == T_EQ){ //<stat> -> local ID : <type> = <EXPRs> <stat>
+                //GENERATE VARIABLE DEFINITION
+                if(token->type == T_EQ){
                     NEXT_TOKEN(token);
-                    CALL_RULE_EMPTY(EXPRs);
+                    if(token->type == T_ID){
+                        if(!(tItem = table_search(global_table/*NEBO LOKALNI*/, token->data)))
+                            return ERR_SEM_DEF;
+                        if(tItem->isFunc){ //<stat> -> local ID : <type> = ID ( <args> <stat>
+                            NEXT_CHECK_TYPE(token, T_PAR_L);
+                            NEXT_TOKEN(token);
+                            CALL_RULE(args, token);
+                            //GENERATE FUNCTION CALL AND SAVE RESULT
+                        }
+                        else{ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
+                            //PARSE EXPRESSION AND SAVE TO VARIABLE
+                        }
+                    }
+                    else{ ////<stat> -> local ID : <type> = EXPR <stat> (starting with term)
+                        //PARSE EXPRESSION AND SAVE TO VARIABLE
+                    }
                 }
                 else //<stat> -> local ID : <type> <stat>
                     NEXT_TOKEN(token);
                 return stat(token);
+
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
                 //PARSE EXPRESSION
+                //GENERATE IF HEADER
                 NEXT_CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
+                //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
                 CHECK_KW(token, KW_ELSE);
                 NEXT_TOKEN(token);
+                //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
                 return stat(token);
+
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
                 //PARSE EXPRESSION
                 NEXT_CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
+                //GENERATE WHILE HEADER
+                //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
                 return stat(token);
+
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
                 NEXT_TOKEN(token);
-                CALL_RULE_EMPTY(EXPRs);
+                int count = 0;
+                CALL_RULE_EMPTY(EXPRs, &count);
+                //GENERATE CODE
                 return stat(token);
+
             case KW_END: //<stat> -> end
+                //POP LOCAL STACKFRAME AND SYMTABLE
+                //GENERATE RETURN FOR WHATEVER BLOCK WE ARE IN (THIS SHIT WILL SUCK)
                 return ERR_OK;
+
             default:
                 return ERR_PARSE;
         }
@@ -246,51 +381,65 @@ int stat(token_t *token){
         return ERR_PARSE;
 }
 
-int IDs(token_t *token){
+int IDs(token_t *token, itemList_t *list){
     PRINT_DEBUG;
     if(token->type == T_ID){ //<IDs> -> ID <IDs_n>
+        tItem = table_search(global_table/*LOCAL TABLES ONLY*/, token->data);
+        if(!tItem)
+            return ERR_SEM_DEF;
+        list_append(list, tItem);
         NEXT_TOKEN(token);
-        return IDs_n(token);
+        return IDs_n(token, list);
     }
     else
         return ERR_PARSE;
 }
 
-int IDs_n(token_t *token){
+int IDs_n(token_t *token, itemList_t *list){
     PRINT_DEBUG;
     if(token->type == T_EQ) //<IDs_n> -> =
         return ERR_OK;
     else if(token->type == T_COMMA){ //<IDs_n> -> , ID <IDs_n>
         NEXT_CHECK_TYPE(token, T_ID);
+        tItem = table_search(global_table/*LOCAL TABLES ONLY*/, token->data);
+        if(!tItem)
+            return ERR_SEM_DEF;
+        list_append(list, tItem);
         NEXT_TOKEN(token);
-        return IDs_n(token);
+        return IDs_n(token, list);
     }
     else
         return ERR_PARSE;
 }
 
-int EXPRs(token_t *token, bool *empty){
+int EXPRs(token_t *token, bool *empty, int *count){
     PRINT_DEBUG;
-    if(token->type == T_ID){ //<EXPRs> -> ID ( <args>
-        NEXT_CHECK_TYPE(token, T_PAR_L);
-        NEXT_TOKEN(token);
-        CALL_RULE(args, token);
-        return ERR_OK;
+    if(token->type == T_ID){
+        tItem = table_search(global_table, token->data);
+        if(tItem){ ////<EXPRs> -> ID ( <args>
+            NEXT_CHECK_TYPE(token, T_PAR_L);
+            NEXT_TOKEN(token);
+            CALL_RULE(args, token);
+            //CALL FUNCTION
+            *count = strlen(tItem->types);
+            return ERR_OK;
+        }
     }
-    else{ //<EXPRs> -> EXPR <EXPRs_n>
-        //PARSE EXPRESSION
-        NEXT_TOKEN(token);
-        return EXPRs_n(token, empty);
-    }
+    //<EXPRs> -> EXPR <EXPRs_n>
+    //PARSE EXPRESSION (CAN BE EMPTY!!)
+    NEXT_TOKEN(token);
+    (*count)++;
+    return EXPRs_n(token, empty, count);
 }
 
-int EXPRs_n(token_t *token, bool *empty){
+int EXPRs_n(token_t *token, bool *empty, int *count){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
         //PARSE EXPRESSION
         NEXT_TOKEN(token);
-        return EXPRs_n(token, empty);
+        (*count)++;
+        return EXPRs_n(token, empty, count);
     }
     else{ //<EXPRs_n> -> e
         *empty = true;
@@ -326,17 +475,37 @@ int type(token_t *token, bool params){
     return ERR_OK;
 }
 
-int term(token_t *token){
+int term(token_t *token, char **types){
     PRINT_DEBUG;
+    tableItem_t *item;
     switch(token->type){ //TODO
         case T_ID:
+            item = table_search(global_table/*TADY BUDE VYHLEDAVANI V LOKALNICH TABULKACH*/, token->data);
+            if(!item)
+                return ERR_SEM_DEF;
+            if(item->isFunc)
+                return ERR_PARSE;
+            string_append(types, item->types[0]);
+            //GENERATE CODE PUSH TO CALL STACK
+            return ERR_OK;
         case T_NUMBER:
+            string_append(types, 'N');
+            //GENERATE CODE PUSH TO CALL STACK
+            return ERR_OK;
         case T_INTEGER:
+            string_append(types, 'I');
+            //GENERATE CODE PUSH TO CALL STACK
+            return ERR_OK;
         case T_STRING:
+            string_append(types, 'S');
+            //GENERATE CODE PUSH TO CALL STACK
             return ERR_OK;
         case T_KW:
-            if(token->keyword == KW_NIL)
+            if(token->keyword == KW_NIL){
+                string_append(types, 'n');
+                //GENERATE CODE PUSH TO CALL STACK
                 return ERR_OK;
+            }
             else
                 return ERR_PARSE;
         default:
