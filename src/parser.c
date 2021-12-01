@@ -87,6 +87,8 @@ int prog(token_t *token){
                     tItem = table_insert(global_table, token->data);
                     tItem->defined = false;
                     tItem->isFunc = true;
+                    tItem->params = string_create(1);
+                    tItem->types = string_create(1);
                     NEXT_CHECK_TYPE(token, T_COLON);
                     NEXT_CHECK_KW(token, KW_FUNCTION);
                     NEXT_CHECK_TYPE(token, T_PAR_L);
@@ -103,16 +105,20 @@ int prog(token_t *token){
                         if(tItem->defined || !tItem->isFunc) //funkce jiz byla definovana, chyba
                             return ERR_SEM_DEF;
                         tItem->defined = true;
-                    }
-                    else{
-                        tItem = table_insert(global_table, token->data);
-                        tItem->defined = true;
-                        tItem->isFunc = true;
                         checkTypes = true;
                         params = string_create(strlen(tItem->types) + 1);
                         types = string_create(strlen(tItem->types) + 1);
                         strcpy(params, tItem->params);
                         strcpy(types, tItem->types);
+                        tItem->params[0] = 0;
+                        tItem->types[0] = 0;
+                    }
+                    else{
+                        tItem = table_insert(global_table, token->data);
+                        tItem->defined = true;
+                        tItem->isFunc = true;
+                        tItem->params = string_create(1);
+                        tItem->types = string_create(1);
                     }
                     NEXT_CHECK_TYPE(token, T_PAR_L);
                     NEXT_TOKEN(token);
@@ -186,6 +192,9 @@ int fdef_args(token_t *token){
     if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
+        tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
+        tItem->isFunc = false;
+        tItem->types = string_create(1);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         CALL_RULE(type, token, true);
@@ -201,6 +210,9 @@ int fdef_args_n(token_t *token){
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
         NEXT_CHECK_TYPE(token, T_ID);
+        tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
+        tItem->isFunc = false;
+        tItem->types = string_create(1);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         CALL_RULE(type, token, true);
@@ -414,7 +426,7 @@ int EXPRs(token_t *token, bool *empty, int *count){
         }
     }
     //<EXPRs> -> EXPR <EXPRs_n>
-    //PARSE EXPRESSION
+    //PARSE EXPRESSION (CAN BE EMPTY!!)
     NEXT_TOKEN(token);
     (*count)++;
     return EXPRs_n(token, empty, count);

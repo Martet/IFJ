@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include "scanner.h"
+#include "symtable.h"
 
 /**
  * @brief Navratovy kod pro chyby prekladace
