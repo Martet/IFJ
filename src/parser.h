@@ -32,6 +32,8 @@ typedef struct ItemList {
     tableItem_t *item;
 } itemList_t;
 
+symtable_t *global_table;
+
 int test_token(token_t *token);
 
 /**
@@ -100,7 +102,7 @@ int test_token(token_t *token);
             NEXT_TOKEN(token);                                      \
     } while(0)
 
-#define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
+#define PRINT_DEBUG printf("Line %d: %s (%s)\n", __LINE__, __func__, token->data)
 
 /**
  * @brief Vytvori dynamicky alokovany string

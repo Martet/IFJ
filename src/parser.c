@@ -11,6 +11,7 @@
 #include "parser.h"
 #include "stack.h"
 #include "symtable.h"
+#include "expression.h"
 
 int test_token(token_t *token){
     static int test_index = 0;
@@ -19,7 +20,6 @@ int test_token(token_t *token){
     return 0;
 }
 
-symtable_t *global_table;
 tableItem_t *tItem;
 
 char *string_create(int size){
@@ -192,11 +192,15 @@ int fdef_args(token_t *token){
     if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
+        tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
         tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
         tItem->isFunc = false;
         tItem->types = string_create(1);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
+        if(type(token, false))
+            return ERR_PARSE;
+        tItem = func;
         CALL_RULE(type, token, true);
         return fdef_args_n(token);
     }
@@ -209,13 +213,18 @@ int fdef_args_n(token_t *token){
     if(token->type == T_PAR_R) //<fdef_args_n> -> )
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
+        tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
         NEXT_CHECK_TYPE(token, T_ID);
         tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
         tItem->isFunc = false;
-        tItem->types = string_create(1);
+        tItem->params = string_create(1);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
-        CALL_RULE(type, token, true);
+        if(type(token, false))
+            return ERR_PARSE;
+        tItem = func;
+        if(type(token, true))
+            return ERR_PARSE;
         return fdef_args_n(token);
     }
     else
@@ -326,22 +335,20 @@ int stat(token_t *token){
                             //GENERATE FUNCTION CALL AND SAVE RESULT
                         }
                         else{ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
-                            //PARSE EXPRESSION AND SAVE TO VARIABLE
+                            CALL_RULE(solvedExpression, token);
                         }
                     }
                     else{ ////<stat> -> local ID : <type> = EXPR <stat> (starting with term)
-                        //PARSE EXPRESSION AND SAVE TO VARIABLE
+                        CALL_RULE(solvedExpression, token);
                     }
                 }
-                else //<stat> -> local ID : <type> <stat>
-                    NEXT_TOKEN(token);
                 return stat(token);
 
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
-                //PARSE EXPRESSION
+                CALL_RULE(solvedExpression, token);
                 //GENERATE IF HEADER
-                NEXT_CHECK_KW(token, KW_THEN);
+                CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
                 //ADD NEW LOCAL SYMTABLE
                 CALL_RULE(stat, token);
@@ -353,8 +360,8 @@ int stat(token_t *token){
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
-                //PARSE EXPRESSION
-                NEXT_CHECK_KW(token, KW_DO);
+                CALL_RULE(solvedExpression, token);
+                CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
                 //GENERATE WHILE HEADER
                 //ADD NEW LOCAL SYMTABLE
@@ -426,8 +433,7 @@ int EXPRs(token_t *token, bool *empty, int *count){
         }
     }
     //<EXPRs> -> EXPR <EXPRs_n>
-    //PARSE EXPRESSION (CAN BE EMPTY!!)
-    NEXT_TOKEN(token);
+    CALL_RULE(solvedExpression, token);
     (*count)++;
     return EXPRs_n(token, empty, count);
 }
@@ -436,8 +442,7 @@ int EXPRs_n(token_t *token, bool *empty, int *count){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
-        //PARSE EXPRESSION
-        NEXT_TOKEN(token);
+        CALL_RULE(solvedExpression, token);
         (*count)++;
         return EXPRs_n(token, empty, count);
     }
@@ -468,10 +473,17 @@ int type(token_t *token, bool params){
         default:
             return ERR_PARSE;
     }
+    //Pridat typ na konec stringu
+    int len = strlen(params ? tItem->params : tItem->types);
+    char *str = realloc(params ? tItem->params : tItem->types, len + 2);
+    if(str == NULL)
+        exit(99);
+    str[len] = type;
+    str[len + 1] = 0;
     if(params)
-        string_append(&(tItem->params), type);
+        tItem->params = str;
     else
-        string_append(&(tItem->types), type);
+        tItem->types = str;
     return ERR_OK;
 }
 
