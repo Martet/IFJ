@@ -30,6 +30,8 @@ const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
 
  Stack s;
 
+
+
 int stack_to_table(Stack *s)
 {
     IdentType A = Stack_Top_Type(s);
@@ -210,7 +212,7 @@ void reduce(Stack* stack,IdentType typevar)
         topik = topik->next;
         cnt++;
     }
-    if (cnt==1 && ( stack->top->type==I_ID || stack->top->type==I_NUMBER || stack->top->type==I_STRING || stack->top->type==I_INTEGER))
+    if (cnt==1 && (stack->top->type==I_ID || stack->top->type==I_NUMBER || stack->top->type==I_STRING || stack->top->type==I_INTEGER))
     {
         char* data = Stack_Top_Data(stack);
         Stack_Pop(stack);
@@ -231,7 +233,6 @@ void reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
-        data = NULL;
         Stack_Push(stack,I_NON_TERM,data);
         printf("#E --> E \n");
 
@@ -340,6 +341,7 @@ void reduce(Stack* stack,IdentType typevar)
 
 }
 
+
 int solvedExpression(token_t *token)
 {
     Stack_Init(&s);
@@ -354,7 +356,21 @@ int solvedExpression(token_t *token)
         IdentType Btype;
         char Bdata[99];
         printf("token type %d",token->type);
-
+        if (s.top->type != I_NON_TERM)
+        {
+            if (s.top->type == I_NUMBER || s.top->type == I_DIVIDE || typevar == I_NUMBER )
+            {
+                typevar = I_NUMBER;
+            }
+            else if(s.top->type == I_INTEGER)
+            {
+                typevar = I_INTEGER;
+            }
+            else if (s.top->type == T_STRING)
+            {
+                typevar = I_STRING;
+            }
+        }    
         
         
         if (boolen == true && (token->keyword == KW_DO || token->keyword == KW_THEN))
@@ -366,36 +382,29 @@ int solvedExpression(token_t *token)
         {
             b = 5;
             Btype = I_DOLAR;
-          //  Bdata = NULL;
+
             end= true;
         }
         else
         {
-            if (token->type == T_NUMBER || token->type == T_DIV || typevar == I_NUMBER )
-            {
-                typevar = I_NUMBER;
-            }
-            else
-            {
-                typevar = I_INTEGER;
-            }
-            if (token->type == T_STRING)
-            {
-                typevar = I_STRING;
-            }
+
             b = get_index_to_table(token->type);
             Btype = TokentoIden(token->type);
             if(Btype == I_INTEGER)
             {
                 sprintf(Bdata, "%d", token->integer);
             }
-            if (Btype == I_STRING)
+            else if (Btype == I_STRING)
             {
-                sprintf(Bdata,"%s",token->data);
+                strcpy(Bdata,token->data);
             }
-            if (Btype == I_NUMBER)
+            else if (Btype == I_NUMBER)
             {
                 sprintf(Bdata, "%f", token->number);
+            }
+            else
+            {
+                strcpy(Bdata," ");
             }
             
         }
@@ -416,7 +425,8 @@ int solvedExpression(token_t *token)
                 get_token(token);
                 break;
             case '>':
-                printf("jsem tu >  reduction \n "); 
+                printf("jsem tu >  reduction \n ");
+                    printf("typevar = %d",typevar);
                 reduce(&s,typevar);
                 Stack_Print(&s);
                 break;
