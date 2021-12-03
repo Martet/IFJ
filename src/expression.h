@@ -76,7 +76,7 @@ int stack_to_table(Stack *s);
  * @param stack zasobik s ulozenymi IdentType
  *
  */
-void reduce(Stack* stack);
+void reduce(Stack* stack, IdentType typevar);
 
 #endif
 

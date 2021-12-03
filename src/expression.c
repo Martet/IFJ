@@ -12,16 +12,20 @@
 #include <stdlib.h>
 #include "expression.h"
 
-#define TABLE_SIZE 6
+#define TABLE_SIZE 9
+bool boolen;
 
 const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
-//  |+-|*///| ( | ) | i | $ 
-    {'>','<','<','>','<','>'}, // +-
-    {'>','>','<','>','<','>'}, // *///
-    {'<','<','<','=','<','0'}, // (
-    {'>','>','0','>','0','>'}, // )
-    {'>','>','0','>','0','>'}, // i
-    {'<','<','<','0','<','D'}, // $ 
+//  |+-|*///| ( | ) | i | $ |<>  |.. |#|
+    {'>','<','<','>','<','>','>','>','<'}, // +-
+    {'>','>','<','>','<','>','>','>','<'}, // *///
+    {'<','<','<','=','<','0','<','>','<'}, // (
+    {'>','>','0','>','0','>','>','<','0'}, // )
+    {'>','>','0','>','0','>','>','>','0'}, // i
+    {'<','<','<','0','<','D','<','<','<'}, // $
+    {'>','<','<','>','<','>','>','<','<'},  // <>
+    {'<','<','<','>','<','>','>','<','<'},  // ..
+    {'>','>','<','>','<','>','>','>','<'},  // #
 };
 
  Stack s;
@@ -60,6 +64,15 @@ int stack_to_table(Stack *s)
     case I_DOLAR:
         index = 5;
         break;
+    case I_LESS: case I_LESS_EQ: case I_GREATER: case I_GREATER_EQ: case I_EQ: case I_EQ_NIL:
+        index = 6;
+        break;
+    case I_HASH:
+        index = 8;
+        break;
+    case I_CONCAT:
+        index = 7;
+        break;
     default:
         break;
     }
@@ -88,6 +101,16 @@ int get_index_to_table(TokenType type)
         break;
     case T_EOL:
         index = 5;
+        break;
+    case T_LESS: case T_LESS_EQ: case T_GREATER: case T_GREATER_EQ: case T_EQ: case T_EQ_NIL:
+        index = 6;
+        boolen = true;
+        break;
+    case T_HASH:
+        index = 8;
+        break;
+    case T_CONCAT:
+        index = 7;
         break;
     default:
         break;
@@ -131,6 +154,31 @@ IdentType TokentoIden(TokenType type){
     case T_EOL:
         return I_DOLAR;
         break;
+        break;
+    case T_LESS:
+        return I_LESS;
+        break;
+    case T_LESS_EQ:
+        return I_LESS_EQ;
+        break;
+    case T_GREATER:
+        return I_GREATER;
+        break;  
+    case T_GREATER_EQ:
+        return I_GREATER_EQ;
+        break;
+    case T_EQ:
+        return I_EQ;
+        break;
+    case T_EQ_NIL:
+        return I_EQ_NIL;
+        break;
+    case T_CONCAT:
+        return I_CONCAT;
+        break;
+    case T_HASH:
+        return I_HASH;
+        break;
     default:
         break;
     }
@@ -139,7 +187,9 @@ IdentType TokentoIden(TokenType type){
 }
 
 
-void reduce(Stack* stack)
+
+
+void reduce(Stack* stack,IdentType typevar)
 {
     ptrItem* topik = stack->top;
     int cnt = 0;
@@ -148,9 +198,7 @@ void reduce(Stack* stack)
         Stack_Pop(stack);
         char* data = Stack_Top_Data(stack);
         Stack_Pop(stack);
-
         Stack_Pop(stack);
-
         Stack_Pop(stack);
         Stack_Push(stack,I_NON_TERM,data);
         printf("(E) --> E \n");
@@ -162,7 +210,7 @@ void reduce(Stack* stack)
         topik = topik->next;
         cnt++;
     }
-    if (cnt==1 && ( stack->top->type==I_ID || stack->top->type==I_NUMBER  || stack->top->type==I_STRING || stack->top->type==I_INTEGER))
+    if (cnt==1 && ( stack->top->type==I_ID || stack->top->type==I_NUMBER || stack->top->type==I_STRING || stack->top->type==I_INTEGER))
     {
         char* data = Stack_Top_Data(stack);
         Stack_Pop(stack);
@@ -170,6 +218,23 @@ void reduce(Stack* stack)
         Stack_Push(stack,I_NON_TERM,data);
         printf("E \n");
         //generace E
+    }
+    else if(cnt==2 && stack->top->type==I_NON_TERM && stack->top->next->type == I_HASH)
+    {
+        if (typevar != I_STRING)
+        {
+            printf("what neni stringois");
+            exit(6);
+        }
+        
+        char* data = Stack_Top_Data(stack); 
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        data = NULL;
+        Stack_Push(stack,I_NON_TERM,data);
+        printf("#E --> E \n");
+
     }
     else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_PLUS && stack->top->next->next->type == I_NON_TERM)
     {
@@ -238,6 +303,33 @@ void reduce(Stack* stack)
         printf("E // E --> E \n");
         //generace operace stack->top->next->data
     }
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type > I_DOLAR && stack->top->next->type < I_CONCAT && stack->top->next->next->type == I_NON_TERM)
+    {
+        char* data = NULL;
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Push(stack,I_NON_TERM,data);
+        printf("E relace.type E --> E \n");
+        //generace operace stack->top->next->data
+    }
+    else if (cnt==3 && stack->top->type==I_NON_TERM && stack->top->next->type == I_CONCAT && stack->top->next->next->type == I_NON_TERM)
+    {
+        char* data = NULL;
+        if (typevar != I_STRING)
+        {
+            exit(6);
+        }
+        
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Push(stack,I_NON_TERM,data);
+        printf("E teckatecka E --> E \n");
+        //generace operace stack->top->next->data
+    }
     else 
     {
         printf("hello chyba");
@@ -252,14 +344,25 @@ int solvedExpression(token_t *token)
 {
     Stack_Init(&s);
     Stack_Push(&s,I_DOLAR,NULL);
+    int typevar =  I_INTEGER;
     bool end = false;
+    boolen = false; //booleen
     while (!end)
     {
         int a = stack_to_table(&s);
         int b;
         IdentType Btype;
-        char Bdata[15];
-        if (token->type == T_EOL || token->type == T_EOF)
+        char Bdata[99];
+        printf("token type %d",token->type);
+
+        
+        
+        if (boolen == true && (token->keyword == KW_DO || token->keyword == KW_THEN))
+        {
+            printf("%d ",token->keyword);
+            break;
+        }
+        if (token->type == T_EOL || token->type == T_EOF || token->type == T_COMMA)
         {
             b = 5;
             Btype = I_DOLAR;
@@ -268,16 +371,33 @@ int solvedExpression(token_t *token)
         }
         else
         {
+            if (token->type == T_NUMBER || token->type == T_DIV || typevar == I_NUMBER )
+            {
+                typevar = I_NUMBER;
+            }
+            else
+            {
+                typevar = I_INTEGER;
+            }
+            if (token->type == T_STRING)
+            {
+                typevar = I_STRING;
+            }
             b = get_index_to_table(token->type);
             Btype = TokentoIden(token->type);
             if(Btype == I_INTEGER)
             {
-                printf("%d",token->integer);
-                sprintf(Bdata, "%i", token->integer);
+                sprintf(Bdata, "%d", token->integer);
             }
-
+            if (Btype == I_STRING)
+            {
+                sprintf(Bdata,"%s",token->data);
+            }
+            if (Btype == I_NUMBER)
+            {
+                sprintf(Bdata, "%f", token->number);
+            }
             
-
         }
         printf("  \n indexy  %d , %d \n",a,b);
         switch (Precedence_table[a][b])
@@ -294,16 +414,15 @@ int solvedExpression(token_t *token)
                 Stack_Print(&s); //tisknu
                 token_print(token);
                 get_token(token);
-                token_print(token);
                 break;
             case '>':
                 printf("jsem tu >  reduction \n "); 
-                reduce(&s);
+                reduce(&s,typevar);
                 Stack_Print(&s);
                 break;
             case 'D':
                 printf("redukujuu");
-                reduce(&s);
+                reduce(&s,typevar);
                 break;
             default:
                 printf("haha chyba");
@@ -315,15 +434,19 @@ int solvedExpression(token_t *token)
     printf("konecna vystupovat \n");
     Stack_Print(&s);
     int a = stack_to_table(&s);
+    printf("a %d ", a);
+    printf("typevar = %d",typevar);
     while (a != 5)
     {
-        reduce(&s);
+        reduce(&s,typevar);
         a = stack_to_table(&s);
         Stack_Print(&s);
     }
     printf("konecna vystupovat po while \n");
     Stack_Destroy(&s);
-        printf("konecna vystupovat po destroy \n");
+    printf("konecna vystupovat po destroy \n");
+    printf("typevar %d", typevar);
+    Stack_Print(&s);
     return 0;
  
 }
