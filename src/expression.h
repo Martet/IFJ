@@ -4,6 +4,7 @@
  * @author Petr Hýbl <xhyblp01@stud.fit.vutbr.cz>
  */
 #include "scanner.h"
+#include "stack.h"
 
 #ifndef EXPRESS_H
 #define EXPRESS_H
@@ -75,7 +76,7 @@ int stack_to_table(Stack *s);
  * @param stack zasobik s ulozenymi IdentType
  *
  */
-void reduce(Stack* stack);
+void reduce(Stack* stack, IdentType typevar);
 
 #endif
 

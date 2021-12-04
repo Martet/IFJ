@@ -82,9 +82,9 @@ int prog(token_t *token){
             switch(token->keyword){
                 case KW_GLOBAL: //<prog> -> global ID : function ( <fdec_args> <f_types> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
-                    if(table_search(global_table, token->data))
-                        return ERR_SEM_DEF;
-                    tItem = table_insert(global_table, token->data);
+                    // if(table_search(global_table, token->data))
+                        // return ERR_SEM_DEF;
+                    // tItem = table_insert(global_table, token->data);
                     tItem->defined = false;
                     tItem->isFunc = true;
                     tItem->params = string_create(1);
