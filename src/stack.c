@@ -65,12 +65,19 @@ void Stack_Pop(Stack *stack)
 		ptrItem *item=NULL;
 		item = stack->top;
 		stack->top = item->next;
+		// if (item->data != NULL)
+		// {
+		// 	free(item->data);
+
+		// }
+		
+
 		free(item);
 	}
 }
 
 
-void Stack_Push(Stack *stack, int type, char* data)
+void Stack_Push(Stack *stack, int type, char *data)
 {
 	ptrItem *item = malloc(sizeof(ptrItem));
 	if (item==NULL)
@@ -78,7 +85,7 @@ void Stack_Push(Stack *stack, int type, char* data)
 		exit(99);
 	}
 	item->type=type;
-	item->data = data;
+	item->data= data;
 	item->next=stack->top;
 	stack->top=item;
 	return;
