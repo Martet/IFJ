@@ -95,6 +95,7 @@ typedef struct token {
 	char *data;
 	int integer;
 	double number;
+	int line;
 } token_t;
 
 /**

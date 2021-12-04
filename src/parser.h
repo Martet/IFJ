@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 #include "scanner.h"
+#include "symtable.h"
 
 /**
  * @brief Navratovy kod pro chyby prekladace
@@ -26,19 +27,10 @@ typedef enum errCode {
     ERR_ZERO
 } ErrCode;
 
-//Tady budou struktury pro ulozeni dat funkce (typ, argumenty...)
-//TODO
-typedef enum funcType {
-    FUNC_DEF,
-    FUNC_DEC,
-    FUNC_CALL
-} FuncType;
-
-typedef struct funcData {
-    FuncType type;
-    int argc;
-    
-} funcData_t;
+typedef struct ItemList {
+    struct ItemList *next;
+    tableItem_t *item;
+} itemList_t;
 
 int test_token(token_t *token);
 
@@ -99,10 +91,10 @@ int test_token(token_t *token);
             return ERR_PARSE;                                       \
     } while(0) 
 
-#define CALL_RULE_EMPTY(rule)                                       \
+#define CALL_RULE_EMPTY(rule, ...)                                  \
     do{                                                             \
         bool empty = false;                                         \
-        int err = rule(token, &empty);                              \
+        int err = rule(token, &empty, ## __VA_ARGS__);              \
         if(err) return err;                                         \
         if(!empty)                                                  \
             NEXT_TOKEN(token);                                      \
@@ -111,12 +103,44 @@ int test_token(token_t *token);
 #define PRINT_DEBUG printf("---------------\nLine %d: %s", __LINE__, __func__); token_print(token)
 
 /**
+ * @brief Vytvori dynamicky alokovany string
+ * 
+ * @param int Velikost noveho stringu
+ * @return Ukazatel na vytvoreny string
+ */
+char *string_create(int size);
+
+/**
  * @brief Prida znak na konec dynamickeho stringu
  * 
  * @param str Ukazatel na ukazatel na dynamicky alokovany string
  * @param c Znak pro pridani
  */
 void string_append(char **str, char c);
+
+/**
+ * @brief Kontrola dvou seznamu datovych typu, pri neshode muze byt typ z types2 nil
+ * 
+ * @param types1 Seznam typu ke kontrole
+ * @param types2 Seznam typu ke kontrole
+ * @return 0 pri shode, 1 pri neshode
+ */
+int check_types(char *types1, char *types2);
+
+/**
+ * @brief Inicializace linked listu symtable itemu
+ * 
+ * @return Ukazatel na nove vytvoreny list
+ */
+itemList_t *list_init();
+
+/**
+ * @brief Pridani polozky na konec listu
+ * 
+ * @param list List pro upravu
+ * @param item Polozka pro pridani
+ */
+void list_append(itemList_t *list, tableItem_t *item);
 
 /**
  * @brief Implementace pravidla <prog>, startovni bod parseru
@@ -197,9 +221,10 @@ int args(token_t *token);
  * @brief Implementace pravidla <args_n>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param types Ukazatel na dynamicky string pro kontrolu parametru
  * @return int Chybovy kod
  */
-int args_n(token_t *token);
+int args_n(token_t *token, char **types);
 
 /**
  * @brief Implementace pravidla <stat>
@@ -213,35 +238,39 @@ int stat(token_t *token);
  * @brief Implementace pravidla <IDs>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param list Ukazatel na list, kam se budou pridavat promenne
  * @return int Chybovy kod
  */
-int IDs(token_t *token);
+int IDs(token_t *token, itemList_t *list);
 
 /**
  * @brief Implementace pravidla <IDs_n>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param list Ukazatel na list, kam se budou pridavat promenne
  * @return int Chybovy kod
  */
-int IDs_n(token_t *token);
+int IDs_n(token_t *token, itemList_t *list);
 
 /**
  * @brief Implementace pravidla <EXPRs>
  * 
  * @param token Dalsi token pro zpracovani
  * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @param count Ukazatel na promennou, kam bude nastaven pocet zpracovanych vyrazu
  * @return int Chybovy kod
  */
-int EXPRs(token_t *token, bool *empty);
+int EXPRs(token_t *token, bool *empty, int *count);
 
 /**
  * @brief Implementace pravidla <EXPRs_n>
  * 
  * @param token Dalsi token pro zpracovani
  * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
+ * @param count Ukazatel na promennou, kam bude nastaven pocet zpracovanych vyrazu
  * @return int Chybovy kod
  */
-int EXPRs_n(token_t *token, bool *empty);
+int EXPRs_n(token_t *token, bool *empty, int *count);
 
 /**
  * @brief Implementace pravidla <type>
@@ -255,8 +284,9 @@ int type(token_t *token, bool params);
  * @brief Implementace pravidla <term>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param types Dynamicky string se seznamem typu pro kontrolu
  * @return int Chybovy kod
  */
-int term(token_t *token);
+int term(token_t *token, char **types);
 
 #endif

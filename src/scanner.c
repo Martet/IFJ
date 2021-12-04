@@ -11,8 +11,11 @@
 
 char buffer[20];
 
+int lineCount = 1;
+
 void token_print(token_t *token){
 	printf("\nSTART Token\n");
+	printf("line number: %i\n", token->line);
 	printf("type: %i (z scanner.h)\n", token->type);
 	if(token->type == T_KW)
 		printf("keyword: %i\n", token->keyword);
@@ -151,6 +154,7 @@ int get_token(token_t *token){
 
 	while(1) {
 		curr_char = getc(stdin);
+		token->line = lineCount;
 
 		switch(state){
 			case START:
@@ -160,6 +164,7 @@ int get_token(token_t *token){
 						return 0;
 					case '\n':
 						token->type = T_EOL;
+						lineCount++;
 						return 0;	
 					case '"':
 						state = STRING_START;
@@ -531,7 +536,7 @@ int get_token(token_t *token){
 				}
 
 			case STRING_BACKSLASH:
-				if(curr_char == '"' || curr_char == '\\' || curr_char == 'n' || curr_char || 't'){
+				if(curr_char == '"' || curr_char == '\\' || curr_char == 'n' || curr_char == 't'){
 					state = STRING_BACKSLASH_CORRECT;
 					ungetc(curr_char, stdin);
 					break;
