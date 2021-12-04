@@ -20,7 +20,8 @@ int test_token(token_t *token){
     return 0;
 }
 
-tableItem_t *tItem;
+tableItem_t *tItem, *currFunc;
+int labelID, depth;
 
 char *string_create(int size){
     char *str = malloc(size);
@@ -82,9 +83,9 @@ int prog(token_t *token){
             switch(token->keyword){
                 case KW_GLOBAL: //<prog> -> global ID : function ( <fdec_args> <f_types> <prog>
                     NEXT_CHECK_TYPE(token, T_ID);
-                    // if(table_search(global_table, token->data))
-                        // return ERR_SEM_DEF;
-                    // tItem = table_insert(global_table, token->data);
+                    if(table_search(global_table, token->data))
+                        return ERR_SEM_DEF;
+                    tItem = table_insert(global_table, token->data);
                     tItem->defined = false;
                     tItem->isFunc = true;
                     tItem->params = string_create(1);
@@ -122,7 +123,9 @@ int prog(token_t *token){
                     }
                     NEXT_CHECK_TYPE(token, T_PAR_L);
                     NEXT_TOKEN(token);
-                    CALL_RULE(fdef_args, token);
+                    // PUSH SYMTABLE
+                    itemList_t *args = list_init();
+                    CALL_RULE(fdef_args, token, args);
                     CALL_RULE_EMPTY(f_types);
                     if(checkTypes){
                         if(strcmp(tItem->params, params) || strcmp(tItem->types, types))
@@ -130,9 +133,24 @@ int prog(token_t *token){
                         free(params);
                         free(types);
                     }
-                    //GENERATE FUNCTION HEADER
-                    //ADD NEW LOCAL SYMTABLE
+
+                    printf("LABEL %s\n", tItem->key);
+                    printf("CREATEFRAME\n");
+                    itemList_t *i = args;
+                    while(i){
+                        printf("DEFVAR TF@%s\n", i->item->key);
+                        printf("POPS TF@%s\n", i->item->key);
+                        i = i->next;
+                    }
+                    printf("PUSHFRAME\n");
+
+                    currFunc = tItem;
+                    depth = 0;
                     CALL_RULE(stat, token);
+
+                    printf("POPFRAME\n");
+                    printf("RETURN\n");
+
                     return prog(token);
 
                 case KW_REQUIRE: //<prog> -> require STRING <prog>
@@ -153,7 +171,9 @@ int prog(token_t *token){
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
-            //GENERATE CODE FOR FUNC CALL
+            
+            printf("CALL %s\n", tItem->key);
+
             return prog(token);
 
         case T_EOF: //<prog> -> EOF
@@ -187,7 +207,7 @@ int fdec_args_n(token_t *token){
         return ERR_PARSE;
 }
 
-int fdef_args(token_t *token){
+int fdef_args(token_t *token, itemList_t *args){
     PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
@@ -196,19 +216,20 @@ int fdef_args(token_t *token){
         tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
         tItem->isFunc = false;
         tItem->types = string_create(1);
+        list_append(args, tItem);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         if(type(token, false))
             return ERR_PARSE;
         tItem = func;
         CALL_RULE(type, token, true);
-        return fdef_args_n(token);
+        return fdef_args_n(token, args);
     }
     else
         return ERR_PARSE;
 }
 
-int fdef_args_n(token_t *token){
+int fdef_args_n(token_t *token, itemList_t *args){
     PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdef_args_n> -> )
         return ERR_OK;
@@ -218,6 +239,7 @@ int fdef_args_n(token_t *token){
         tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
         tItem->isFunc = false;
         tItem->params = string_create(1);
+        list_append(args, tItem);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         if(type(token, false))
@@ -225,7 +247,7 @@ int fdef_args_n(token_t *token){
         tItem = func;
         if(type(token, true))
             return ERR_PARSE;
-        return fdef_args_n(token);
+        return fdef_args_n(token, args);
     }
     else
         return ERR_PARSE;
@@ -300,7 +322,9 @@ int stat(token_t *token){
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
-            //GENERATE CODE FOR FUNCTION CALL
+            
+            printf("CALL %s\n", tItem->key);
+
             return stat(token);
         }
         else{ //<stat> -> <IDs> <EXPRs> <stat>
@@ -322,7 +346,10 @@ int stat(token_t *token){
                 NEXT_CHECK_TYPE(token, T_COLON);
                 NEXT_TOKEN(token);
                 CALL_RULE(type, token, false);
-                //GENERATE VARIABLE DEFINITION
+                
+                char *name = tItem->key;
+                printf("DEFVAR LF@%s_%d\n", name, depth);
+
                 if(token->type == T_EQ){
                     NEXT_TOKEN(token);
                     if(token->type == T_ID){
@@ -332,7 +359,9 @@ int stat(token_t *token){
                             NEXT_CHECK_TYPE(token, T_PAR_L);
                             NEXT_TOKEN(token);
                             CALL_RULE(args, token);
-                            //GENERATE FUNCTION CALL AND SAVE RESULT
+
+                            printf("CALL %s\n", tItem->key);
+                            printf("POPS LF%s_%d\n", name, depth);
                         }
                         else{ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
                             CALL_RULE(solvedExpression, token);
@@ -347,15 +376,28 @@ int stat(token_t *token){
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
                 CALL_RULE(solvedExpression, token);
-                //GENERATE IF HEADER
                 CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
                 //ADD NEW LOCAL SYMTABLE
+                
+                printf("CREATEFRAME\n");
+                printf("PUSHFRAME\n");
+                depth++;
                 CALL_RULE(stat, token);
+                printf("POPFRAME\n");
+
                 CHECK_KW(token, KW_ELSE);
                 NEXT_TOKEN(token);
                 //ADD NEW LOCAL SYMTABLE
+
+                printf("LABEL ELSE_%d\n", labelID);
+                printf("CREATEFRAME\n");
+                printf("PUSHFRAME\n");
                 CALL_RULE(stat, token);
+                depth--;
+                printf("POPFRAME\n");
+                printf("LABEL ENDIF_%d\n", labelID++);
+
                 return stat(token);
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
@@ -363,21 +405,38 @@ int stat(token_t *token){
                 CALL_RULE(solvedExpression, token);
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
-                //GENERATE WHILE HEADER
                 //ADD NEW LOCAL SYMTABLE
+
+                printf("CREATEFRAME\n");
+                printf("PUSHFRAME\n");
+                printf("LABEL WHILE_%d\n", labelID);
+                depth++;
                 CALL_RULE(stat, token);
+                depth--;
+                // WHILE CONDITION
+                printf("POPFRAME\n");
+                labelID++;
                 return stat(token);
 
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
                 NEXT_TOKEN(token);
                 int count = 0;
                 CALL_RULE_EMPTY(EXPRs, &count);
-                //GENERATE CODE
+                while(count < strlen(currFunc->types))
+                    printf("PUSHS nil@nil\n");
+                if(count > strlen(currFunc->types))
+                    return ERR_SEM_PARAM;
+                printf("RETURN\n"); //TODO SOLVE POPPING FRAME
                 return stat(token);
 
             case KW_END: //<stat> -> end
-                //POP LOCAL STACKFRAME AND SYMTABLE
-                //GENERATE RETURN FOR WHATEVER BLOCK WE ARE IN (THIS SHIT WILL SUCK)
+                //POP LOCAL SYMTABLE
+                printf("POPFRAME\n");
+                if(depth == 0){
+                    printf("RETURN\n");
+                }
+                else
+                    depth--;
                 return ERR_OK;
 
             default:
@@ -498,24 +557,24 @@ int term(token_t *token, char **types){
             if(item->isFunc)
                 return ERR_PARSE;
             string_append(types, item->types[0]);
-            //GENERATE CODE PUSH TO CALL STACK
+            printf("PUSHS LF@%s\n", item->key);
             return ERR_OK;
         case T_NUMBER:
             string_append(types, 'N');
-            //GENERATE CODE PUSH TO CALL STACK
+            printf("PUSHS float@%a\n", token->number);
             return ERR_OK;
         case T_INTEGER:
             string_append(types, 'I');
-            //GENERATE CODE PUSH TO CALL STACK
+            printf("PUSHS int@%lld\n", token->integer);
             return ERR_OK;
         case T_STRING:
             string_append(types, 'S');
-            //GENERATE CODE PUSH TO CALL STACK
+            printf("PUSHS string@%s\n", token->data); // TODO CONVERT TO IFJCODE STRING
             return ERR_OK;
         case T_KW:
             if(token->keyword == KW_NIL){
                 string_append(types, 'n');
-                //GENERATE CODE PUSH TO CALL STACK
+                printf("PUSHS nil@nil\n");
                 return ERR_OK;
             }
             else

@@ -174,7 +174,7 @@ int fdec_args_n(token_t *token);
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
-int fdef_args(token_t *token);
+int fdef_args(token_t *token, itemList_t *args);
 
 /**
  * @brief Implementace pravidla <fdef_args_n>
@@ -182,7 +182,7 @@ int fdef_args(token_t *token);
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
-int fdef_args_n(token_t *token);
+int fdef_args_n(token_t *token, itemList_t *args);
 
 /**
  * @brief Implementace pravidla <f_types>
