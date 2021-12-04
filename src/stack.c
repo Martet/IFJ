@@ -32,13 +32,26 @@ bool Stack_IsEmpty(Stack* stack)
 
 
 
-int Stack_Top(Stack *stack)
+int Stack_Top_Type(Stack *stack)
 {
 
 	if (Stack_IsEmpty(stack)) //pokud je prazdny nejsou v nem data
 	{
-		return -1;
+		exit(99);
 	}
+
+	return stack->top->type; // vrati vrchol zasobniku
+}
+
+char* Stack_Top_Data(Stack *stack)
+{
+
+	if (Stack_IsEmpty(stack)) //pokud je prazdny nejsou v nem data
+	{
+		return NULL;
+	}
+
+	
 
 	return stack->top->data; // vrati vrchol zasobniku
 }
@@ -52,19 +65,27 @@ void Stack_Pop(Stack *stack)
 		ptrItem *item=NULL;
 		item = stack->top;
 		stack->top = item->next;
+		// if (item->data != NULL)
+		// {
+		// 	free(item->data);
+
+		// }
+		
+
 		free(item);
 	}
 }
 
 
-void Stack_Push(Stack *stack, int data)
+void Stack_Push(Stack *stack, int type, char *data)
 {
 	ptrItem *item = malloc(sizeof(ptrItem));
 	if (item==NULL)
 	{
-		return;
+		exit(99);
 	}
-	item->data=data;
+	item->type=type;
+	item->data= data;
 	item->next=stack->top;
 	stack->top=item;
 	return;
@@ -74,6 +95,7 @@ void Stack_Push(Stack *stack, int data)
 void Stack_Destroy(Stack *stack)
 {
 
+
 	while (!Stack_IsEmpty(stack)) //pokud neni prazdny
 	{
 		ptrItem *item=NULL;
@@ -81,22 +103,26 @@ void Stack_Destroy(Stack *stack)
 		stack->top = item->next;
 		free(item);
 	}
+
+	
+
 }
 
-int Stack_InsertBeforeNonTerm(Stack *stack, int data)
+int Stack_InsertBeforeNonTerm(Stack *stack, int type,char* data)
 {
 
 	ptrItem* tmp = Stack_Top_Ptr(stack);
 	ptrItem* previous = NULL;
 	while (tmp!= NULL)
 	{
-		if (tmp->data < I_HALT)
+		if (tmp->type < I_HALT)
 		{
 			ptrItem *novy = malloc(sizeof(ptrItem));
 			if (novy == NULL)
 			{
-				return -1;
+				exit(99);
 			}
+			novy->type = type;
 			novy->data = data;
 			if (previous != NULL)
 			{
@@ -126,7 +152,7 @@ ptrItem* Stack_Top_Ptr( Stack* stack){
 
 	if (Stack_IsEmpty(stack)) //pokud je prazdny nejsou v nem data
 	{
-		return NULL;
+		exit(99);
 	}
 	ptrItem* top = stack->top;
 	return top;
@@ -138,7 +164,7 @@ void Stack_Print(Stack* stack){
 	printf("-------------STACK PRINT-------- ID types z expression.h \n");
 	while(tmp!=NULL)
 	{
-		printf("%i \n",tmp->data);
+		printf("%i %s \n",tmp->type,tmp->data);
 		tmp = tmp->next;
 	}
 	printf("---konec printu-----\n");
