@@ -50,6 +50,19 @@ int token_data_append(token_t *token, char c){
     return 0;
 }
 
+int token_data_remove_last_char(token_t *token){
+	int len = strlen(token->data);
+	// Nelze mazat do minusu
+	if(len != 0){
+		token->data = realloc(token->data , len);
+		if(token->data == NULL){
+			exit(99);
+		}
+		token->data[len-1] = '\0';
+	}
+	return 0;
+}
+
 int token_data_clear(token_t *token){
     free(token->data);
     return 0;
@@ -240,6 +253,11 @@ int get_token(token_t *token){
 							token_data_init(token);
 							ungetc(curr_char, stdin);
 							break;
+						}
+						else {
+							// Nic jineho nelze
+							// Error
+							return 1;
 						}
 						break;
 				}
