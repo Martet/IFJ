@@ -263,7 +263,7 @@ int get_token(token_t *token){
 					break;
 				}
 
-				else if(curr_char == ','){
+				else if(curr_char == '.'){
 					state = DECIMAL;
 					token_data_append(token,'.');
 					// ungetc(curr_char, stdin);
