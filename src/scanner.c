@@ -41,7 +41,7 @@ int token_data_init(token_t *token){
 int token_data_append(token_t *token, char c){
     int len = strlen(token->data);
     token->data = realloc(token->data , len + 1 + 1);
-    if(token->data = NULL){
+    if(token->data == NULL){
 	exit(99);
     }
     token->data[len] = c;
