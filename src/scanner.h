@@ -96,7 +96,7 @@ typedef struct token {
 	TokenType type;
 	TokenKeyword keyword;
 	char *data;
-	long long integer;
+	long long int integer;
 	double number;
 	int line;
 } token_t;
