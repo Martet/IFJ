@@ -127,6 +127,14 @@ int token_data_init(token_t *token);
 int token_data_append(token_t *token, char c);
 
 /**
+ * @brief Odstrani posledni znak ze stringu
+ *
+ * @param token Token pro zpracovani
+ *
+ */
+int token_data_remove_last_char(token_t *token);
+
+/**
  * @brief Dealokuje data v tokenu
  *
  * @param token Token pro zpracovani
