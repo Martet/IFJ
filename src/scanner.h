@@ -39,7 +39,10 @@ typedef enum scanState {
 	EQ_NIL,
 	CONCAT_HALF,
 	CONCAT,
-	HASH
+	HASH,
+	COMMENT_DECIDE,
+	COMMENT_LINE,
+	COMMENT_BLOCK,
 
 } ScanState;
 
