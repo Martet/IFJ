@@ -32,9 +32,8 @@ typedef struct ItemList {
     tableItem_t *item;
 } itemList_t;
 
-symtable_t *global_table;
-
-int test_token(token_t *token);
+tableItem_t *global_table;
+tableList_t *local_table;
 
 /**
  * @brief Makro ulozi do promenne token novy token, pri chybe vrati chybovy kod lexeru
@@ -42,7 +41,7 @@ int test_token(token_t *token);
  */
 #define NEXT_TOKEN(token)                                           \
     do{                                                             \
-        if(test_token(token))                                        \
+        if(get_token(token))                                        \
             return ERR_LEX;                                         \
     } while(0)
 

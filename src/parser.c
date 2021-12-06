@@ -13,13 +13,6 @@
 #include "symtable.h"
 #include "expression.h"
 
-int test_token(token_t *token){
-    static int test_index = 0;
-    token_t token_list[] = {{T_KW, KW_FUNCTION}, {T_ID, data: "foo"}, {T_PAR_L}, {T_ID, data: "bar"}, {T_COLON}, {T_KW, KW_NUMBER}, {T_PAR_R}, {T_COLON}, {T_KW, KW_STRING}, {T_KW, KW_RETURN}, {T_STRING, data: "test"}, {T_KW, KW_END}, {T_ID, data: "foo"}, {T_PAR_L}, {T_INTEGER, integer: 5}, {T_PAR_R}, {T_EOF}};
-    *token = token_list[test_index++];
-    return 0;
-}
-
 tableItem_t *tItem, *currFunc;
 int labelID, depth;
 
@@ -85,7 +78,7 @@ int prog(token_t *token){
                     NEXT_CHECK_TYPE(token, T_ID);
                     if(table_search(global_table, token->data))
                         return ERR_SEM_DEF;
-                    tItem = table_insert(global_table, token->data);
+                    tItem = table_insert(&global_table, token->data);
                     tItem->defined = false;
                     tItem->isFunc = true;
                     tItem->params = string_create(1);
@@ -115,7 +108,7 @@ int prog(token_t *token){
                         tItem->types[0] = 0;
                     }
                     else{
-                        tItem = table_insert(global_table, token->data);
+                        tItem = table_insert(&global_table, token->data);
                         tItem->defined = true;
                         tItem->isFunc = true;
                         tItem->params = string_create(1);
@@ -123,7 +116,7 @@ int prog(token_t *token){
                     }
                     NEXT_CHECK_TYPE(token, T_PAR_L);
                     NEXT_TOKEN(token);
-                    // PUSH SYMTABLE
+                    table_list_insert(&local_table);
                     itemList_t *args = list_init();
                     CALL_RULE(fdef_args, token, args);
                     CALL_RULE_EMPTY(f_types);
@@ -137,7 +130,7 @@ int prog(token_t *token){
                     printf("LABEL %s\n", tItem->key);
                     printf("CREATEFRAME\n");
                     itemList_t *i = args;
-                    while(i){
+                    while(i->item){
                         printf("DEFVAR TF@%s\n", i->item->key);
                         printf("POPS TF@%s\n", i->item->key);
                         i = i->next;
@@ -148,6 +141,7 @@ int prog(token_t *token){
                     depth = 0;
                     CALL_RULE(stat, token);
 
+                    table_list_delete(&local_table);
                     printf("POPFRAME\n");
                     printf("RETURN\n");
 
@@ -213,7 +207,7 @@ int fdef_args(token_t *token, itemList_t *args){
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
         tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
-        tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
+        tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
         tItem->isFunc = false;
         tItem->types = string_create(1);
         list_append(args, tItem);
@@ -236,7 +230,7 @@ int fdef_args_n(token_t *token, itemList_t *args){
     else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
         tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
         NEXT_CHECK_TYPE(token, T_ID);
-        tItem = table_insert(global_table/*NEWEST LOCAL TABLE*/, token->data);
+        tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
         tItem->isFunc = false;
         tItem->params = string_create(1);
         list_append(args, tItem);
@@ -340,8 +334,9 @@ int stat(token_t *token){
         switch(token->keyword){
             case KW_LOCAL:
                 NEXT_CHECK_TYPE(token, T_ID);
-                //TODO CHECK JESTLI JE V NEJVYSSIM LOKALNIM SYMTABLU, POTOM CHYBA
-                tItem = table_insert(global_table, token->data);
+                if(table_search_first(local_table, token->data))
+                    return ERR_SEM_DEF;
+                tItem = table_insert(&(local_table->table), token->data);
                 tItem->isFunc = false;
                 NEXT_CHECK_TYPE(token, T_COLON);
                 NEXT_TOKEN(token);
@@ -353,9 +348,7 @@ int stat(token_t *token){
                 if(token->type == T_EQ){
                     NEXT_TOKEN(token);
                     if(token->type == T_ID){
-                        if(!(tItem = table_search(global_table/*NEBO LOKALNI*/, token->data)))
-                            return ERR_SEM_DEF;
-                        if(tItem->isFunc){ //<stat> -> local ID : <type> = ID ( <args> <stat>
+                        if(tItem = table_search(global_table, token->data)){ //<stat> -> local ID : <type> = ID ( <args> <stat>
                             NEXT_CHECK_TYPE(token, T_PAR_L);
                             NEXT_TOKEN(token);
                             CALL_RULE(args, token);
@@ -363,12 +356,16 @@ int stat(token_t *token){
                             printf("CALL %s\n", tItem->key);
                             printf("POPS LF%s_%d\n", name, depth);
                         }
-                        else{ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
+                        else if(tItem = table_search_all(local_table, token->data)){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
                             CALL_RULE(solvedExpression, token);
+                            printf("POPS LF@%s_%d\n", name, depth);
                         }
+                        else
+                            return ERR_SEM_DEF;
                     }
                     else{ ////<stat> -> local ID : <type> = EXPR <stat> (starting with term)
                         CALL_RULE(solvedExpression, token);
+                        printf("POPS LF@%s_%d\n", name, depth);
                     }
                 }
                 return stat(token);
@@ -378,7 +375,7 @@ int stat(token_t *token){
                 CALL_RULE(solvedExpression, token);
                 CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
-                //ADD NEW LOCAL SYMTABLE
+                table_list_insert(&local_table);
                 
                 printf("CREATEFRAME\n");
                 printf("PUSHFRAME\n");
@@ -386,9 +383,10 @@ int stat(token_t *token){
                 CALL_RULE(stat, token);
                 printf("POPFRAME\n");
 
+                table_list_delete(&local_table);
                 CHECK_KW(token, KW_ELSE);
                 NEXT_TOKEN(token);
-                //ADD NEW LOCAL SYMTABLE
+                table_list_insert(&local_table);
 
                 printf("LABEL ELSE_%d\n", labelID);
                 printf("CREATEFRAME\n");
@@ -398,6 +396,7 @@ int stat(token_t *token){
                 printf("POPFRAME\n");
                 printf("LABEL ENDIF_%d\n", labelID++);
 
+                table_list_delete(&local_table);
                 return stat(token);
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
@@ -405,7 +404,7 @@ int stat(token_t *token){
                 CALL_RULE(solvedExpression, token);
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
-                //ADD NEW LOCAL SYMTABLE
+                table_list_insert(&local_table);
 
                 printf("CREATEFRAME\n");
                 printf("PUSHFRAME\n");
@@ -416,23 +415,26 @@ int stat(token_t *token){
                 // WHILE CONDITION
                 printf("POPFRAME\n");
                 labelID++;
+                table_list_delete(&local_table);
                 return stat(token);
 
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
                 NEXT_TOKEN(token);
                 int count = 0;
                 CALL_RULE_EMPTY(EXPRs, &count);
-                while(count < strlen(currFunc->types))
+                while(count < (int)strlen(currFunc->types))
                     printf("PUSHS nil@nil\n");
-                if(count > strlen(currFunc->types))
+                if(count > (int)strlen(currFunc->types))
                     return ERR_SEM_PARAM;
                 printf("RETURN\n"); //TODO SOLVE POPPING FRAME
                 return stat(token);
 
             case KW_END: //<stat> -> end
-                //POP LOCAL SYMTABLE
+                table_list_delete(&local_table);
                 printf("POPFRAME\n");
                 if(depth == 0){
+                    for(int i = 0; i < (int)strlen(currFunc->types); i++)
+                        printf("PUSHS nil@nil\n");
                     printf("RETURN\n");
                 }
                 else
@@ -450,7 +452,7 @@ int stat(token_t *token){
 int IDs(token_t *token, itemList_t *list){
     PRINT_DEBUG;
     if(token->type == T_ID){ //<IDs> -> ID <IDs_n>
-        tItem = table_search(global_table/*LOCAL TABLES ONLY*/, token->data);
+        tItem = table_search_all(local_table, token->data);
         if(!tItem)
             return ERR_SEM_DEF;
         list_append(list, tItem);
@@ -467,7 +469,7 @@ int IDs_n(token_t *token, itemList_t *list){
         return ERR_OK;
     else if(token->type == T_COMMA){ //<IDs_n> -> , ID <IDs_n>
         NEXT_CHECK_TYPE(token, T_ID);
-        tItem = table_search(global_table/*LOCAL TABLES ONLY*/, token->data);
+        tItem = table_search_all(local_table, token->data);
         if(!tItem)
             return ERR_SEM_DEF;
         list_append(list, tItem);
@@ -486,7 +488,7 @@ int EXPRs(token_t *token, bool *empty, int *count){
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
-            //CALL FUNCTION
+            printf("CALL %s\n", tItem->key);
             *count = strlen(tItem->types);
             return ERR_OK;
         }
@@ -516,7 +518,7 @@ int type(token_t *token, bool params){
     if(token->type != T_KW)
         return ERR_PARSE;
     char type;
-    switch(token->keyword){ //TODO
+    switch(token->keyword){
         case KW_NUMBER:
             type = 'N';
             break;
@@ -549,13 +551,11 @@ int type(token_t *token, bool params){
 int term(token_t *token, char **types){
     PRINT_DEBUG;
     tableItem_t *item;
-    switch(token->type){ //TODO
+    switch(token->type){
         case T_ID:
-            item = table_search(global_table/*TADY BUDE VYHLEDAVANI V LOKALNICH TABULKACH*/, token->data);
+            item = table_search_all(local_table, token->data);
             if(!item)
                 return ERR_SEM_DEF;
-            if(item->isFunc)
-                return ERR_PARSE;
             string_append(types, item->types[0]);
             printf("PUSHS LF@%s\n", item->key);
             return ERR_OK;

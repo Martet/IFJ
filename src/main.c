@@ -1,3 +1,12 @@
+/**
+ * @file main.c
+ * @author Dominik Klon (xklond00@stud.fit.vutbr.cz)
+ * @author Martin Zmitko (xzmitk01@stud.fit.vutbr.cz)
+ * @author Petr Hýbl (xhyblp01@stud.fit.vutbr.cz)
+ * @author Alexandr Čelakovský (xcelak00@stud.fit.vutbr.cz)
+ * @brief Vstupni bod do prekladace
+ */
+
 #include <stdio.h>
 #include "parser.h"
 #include "scanner.h"
@@ -36,14 +45,6 @@ ErrCode printError(ErrCode err, token_t *token){
 
 int main(void){
     token_t token;
-    // get_token(&token);
-    // Priklad vraceni vsech tokenu
-    // while (token.type != T_EOF)
-    // {
-    // get_token(&token);  
-    // token_print(&token);
-    //   }
-    
     get_token(&token);
-    return printError(solvedExpression(&token), &token);
+    return printError(prog(&token), &token);
 }
