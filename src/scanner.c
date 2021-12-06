@@ -245,11 +245,11 @@ int get_token(token_t *token){
 				break;
 
 			case ID_OR_KEYWORD:
-				if((get_char_type(curr_char) == 0) && (curr_char != '_')){
+				if(get_char_type(curr_char) == 0 && curr_char != '_'){
+					is_keyword(token);
 					ungetc(curr_char, stdin);
 					return 0;
 				}
-				is_keyword(token);
 				token_data_append(token,curr_char);
 				break;
 
