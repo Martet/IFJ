@@ -74,8 +74,9 @@ int stack_to_table(Stack *s);
  * @brief Funkce ktera tokeny na zasobniku zmeni na NON-TERM pomoci urcenych pravidel
  *
  * @param stack zasobnik s ulozenymi IdentType
+ * @return kod chyby
  */
-void reduce(Stack* stack, IdentType typevar);
+int reduce(Stack* stack, IdentType typevar);
 
 #endif
 

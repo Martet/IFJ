@@ -144,7 +144,7 @@ IdentType TokentoIden(TokenType type){
     }
 }
 
-void reduce(Stack* stack,IdentType typevar)
+int reduce(Stack* stack,IdentType typevar)
 {
     ptrItem* topik = stack->top;
     int cnt = 0;
@@ -157,7 +157,7 @@ void reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
         printf("(E) --> E \n");
-        return;
+        return 0;
     }
     
     while (topik->type != I_HALT) //<
@@ -171,7 +171,7 @@ void reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack,I_NON_TERM,data);
-        printf("E \n");
+        printf("E: %s\n", data);
         //generace E
     }
     else if(cnt == 2 && stack->top->type == I_NON_TERM && stack->top->next->type == I_HASH)
@@ -197,13 +197,14 @@ void reduce(Stack* stack,IdentType typevar)
             return 9;
         }
         char* data = NULL;
-        printf("E %d E --> E \n", stack->top->next->type);
+        printf("E %d E --> E: \n", stack->top->next->type);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
 
+        //printf("%s\n", stack->top->next->data);
         //generace operace stack->top->next->data
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type > I_DOLAR && stack->top->next->type < I_CONCAT && stack->top->next->next->type == I_NON_TERM)
@@ -214,7 +215,8 @@ void reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        printf("E relace.type E --> E \n");
+        printf("E relace.type E --> E: %s\n", stack->top->next->data);
+
         //generace operace stack->top->next->data
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type == I_CONCAT && stack->top->next->next->type == I_NON_TERM)
@@ -230,7 +232,7 @@ void reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        printf("E teckatecka E --> E \n");
+        printf("E teckatecka E --> E: %s\n", stack->top->next->data);
         //generace operace stack->top->next->data
     }
     else 
@@ -238,6 +240,8 @@ void reduce(Stack* stack,IdentType typevar)
         printf("hello chyba");
         return 6;
     }
+
+    return 0;
 }
 
 int solvedExpression(token_t *token)
@@ -249,7 +253,12 @@ int solvedExpression(token_t *token)
     bool string = false;
     int cnt = 0;
     boolen = false; //booleen
-    char* Bdata;
+    char* Bdata = malloc(99);
+    if (Bdata == NULL)
+    {
+        exit(99);
+    }
+
     while (!end)
     {
         int a = stack_to_table(&s);
@@ -309,38 +318,18 @@ int solvedExpression(token_t *token)
 
             if (Btype == I_ID)
             {
-                Bdata = malloc(99);
-                if (Bdata == NULL)
-                {
-                    exit(99);
-                }
                 strcpy(Bdata, token->data);
             }
             else if(Btype == I_INTEGER)
-            {
-                Bdata = malloc(99);
-                if (Bdata == NULL)
-                {
-                    exit(99);
-                }              
+            {          
                 sprintf(Bdata, "%d", token->integer);
             }
             else if (Btype == I_STRING)
-            {
-                Bdata = malloc(99);
-                if (Bdata == NULL)
-                {
-                    exit(99);
-                }            
+            {         
                 strcpy(Bdata,token->data);
             }
             else if (Btype == I_NUMBER)
             {
-                Bdata = malloc(99);
-                if (Bdata == NULL)
-                {
-                    exit(99);
-                }
                 sprintf(Bdata, "%f", token->number);
             }
             else
@@ -350,6 +339,7 @@ int solvedExpression(token_t *token)
             
         }
         //printf("  \n indexy  %d , %d \n",a,b);
+        int err;
         switch (Precedence_table[a][b])
         {
             case '=':
@@ -368,17 +358,20 @@ int solvedExpression(token_t *token)
             case '>':
                 // printf("jsem tu >  reduction \n ");
                     // printf("typevar = %d",typevar);
-                reduce(&s, typevar);
+                err = reduce(&s, typevar);
+                if(err)
+                    return err;
                 //Stack_print(&s);
                 break;
             case 'D':
                 // printf("redukujuu");
-                reduce(&s, typevar);
+                err = reduce(&s, typevar);
+                if(err)
+                    return err;
                 break;
             default:
                 printf("haha chyba");
                 return 6;
-                break;
         }
     }
     // printf("konecna vystupovat \n");
@@ -388,7 +381,9 @@ int solvedExpression(token_t *token)
     // printf("typevar = %d",typevar);
     while (a != 5)
     {
-        reduce(&s, typevar);
+        int err = reduce(&s, typevar);
+        if(err)
+            return err;
         a = stack_to_table(&s);
         //Stack_print(&s);
     }
