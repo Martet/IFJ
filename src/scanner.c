@@ -292,6 +292,12 @@ int get_token(token_t *token){
 					// ungetc(curr_char, stdin);
 					break;
 				}
+				// Muze byt jeste cislo
+				else if(get_char_type(curr_char) == 1){
+					state = EXPONENT_SIGN;
+					ungetc(curr_char, stdin);
+					break;
+				}
 				// Zadne jine znaky mit nemuzu
 				else {
 					// TODO Error
