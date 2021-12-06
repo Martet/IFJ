@@ -32,7 +32,8 @@ int token_data_init(token_t *token){
     token->data = malloc(1);
     if(token->data == NULL){
         // TODO chyba
-        return -1;
+        // return -1;
+	exit(99);
     }
     token->data[0] = '\0';
 
@@ -221,7 +222,7 @@ int get_token(token_t *token){
 						break;
 					case '-':
 						state = SUB;
-						ungetc(curr_char, stdin);
+						// ungetc(curr_char, stdin);
 						break;
 					case '+':
 						state = ADD;
@@ -483,9 +484,18 @@ int get_token(token_t *token){
 				return 0;
 
 			case SUB:
-				token->type = T_SUB;
-				// Vracim token
-				return 0;
+				// Je to jenom '-'
+				if(curr_char != '-'){
+					ungetc(curr_char, stdin);
+					token->type = T_SUB;
+					// Vracim token
+					return 0;
+				}
+				// Je to komentar
+				else {
+					state = COMMENT_DECIDE;
+					break;
+				}
 			
 			case ADD:
 				token->type = T_ADD;
@@ -550,8 +560,59 @@ int get_token(token_t *token){
 				state = STRING_VALID;
 				break;
 			
+			case COMMENT_DECIDE:
+				printf("COMMENT DECIDE");
+				if(curr_char == '['){
+					curr_char = getc(stdin);
+					if(curr_char == '['){
+						state = COMMENT_BLOCK;
+						break;
+					} else {
+						// Chyba
+						// --[*
+						// nespravny komentar
+						break;
+					}
+				}
+				// Radkovy komentar
+				else {
+					ungetc(curr_char, stdin);
+					state = COMMENT_LINE;
+					break;
+				}
 
-				
+			case COMMENT_LINE:
+				while(curr_char != '\n' && curr_char != EOF){
+					curr_char = getc(stdin);
+				}
+				if(curr_char == EOF){
+					token->type = T_EOF;
+					return 0;
+				}
+				ungetc(curr_char, stdin);
+				state = START;
+				break;
+
+			case COMMENT_BLOCK:
+				while(1){
+					if(curr_char == ']'){
+						curr_char = getc(stdin);
+						if(curr_char == EOF){
+							token->type = T_EOF;
+							return 0;
+						}
+						if(curr_char == ']'){
+							state = START;
+							break;
+						}
+					}
+					if(curr_char == EOF){
+						token->type = T_EOF;
+						return 0;
+					}
+					curr_char = getc(stdin);
+				}
+				break;
 		}
 
 		if(curr_char == EOF){
