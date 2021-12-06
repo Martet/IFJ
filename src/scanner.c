@@ -22,7 +22,7 @@ void token_print(token_t *token){
 	if(token->type == T_KW || token->type == T_ID || token->type == T_STRING)
 		printf("data: %s\n", token->data);
 	if(token->type == T_INTEGER)
-		printf("integer: %i\n", token->integer);
+		printf("integer: %lli\n", token->integer);
 	if(token->type == T_NUMBER)
 		printf("number: %f\n", token->number);
 	printf("END Token\n");
@@ -32,7 +32,8 @@ int token_data_init(token_t *token){
     token->data = malloc(1);
     if(token->data == NULL){
         // TODO chyba
-        return -1;
+        // return -1;
+	exit(99);
     }
     token->data[0] = '\0';
 
@@ -92,7 +93,7 @@ int is_keyword(token_t *token){
 	}
 	else if(strcmp("local", token->data) == 0){
 		token->type = T_KW;
-		token->keyword = KW_NIL;
+		token->keyword = KW_LOCAL;
 		return 1;
 	}
 	else if(strcmp("nil", token->data) == 0){
@@ -221,7 +222,7 @@ int get_token(token_t *token){
 						break;
 					case '-':
 						state = SUB;
-						ungetc(curr_char, stdin);
+						// ungetc(curr_char, stdin);
 						break;
 					case '+':
 						state = ADD;
@@ -251,6 +252,7 @@ int get_token(token_t *token){
 					return 0;
 				}
 				token_data_append(token,curr_char);
+				is_keyword(token);
 				break;
 
 			case INTEGER:
@@ -262,7 +264,7 @@ int get_token(token_t *token){
 					break;
 				}
 
-				else if(curr_char == ','){
+				else if(curr_char == '.'){
 					state = DECIMAL;
 					token_data_append(token,'.');
 					// ungetc(curr_char, stdin);
@@ -272,8 +274,8 @@ int get_token(token_t *token){
 				else if(get_char_type(curr_char) == 1){
 					token_data_append(token, curr_char);
 					char *ptr;
-					long result = strtol(token->data, &ptr,10);
-					token->integer = (int) result;
+					long long result = strtoll(token->data, &ptr,10);
+					token->integer = result;
 					break;
 				}
 				// Jiny znak, vratim ho do stdin
@@ -484,9 +486,18 @@ int get_token(token_t *token){
 				return 0;
 
 			case SUB:
-				token->type = T_SUB;
-				// Vracim token
-				return 0;
+				// Je to jenom '-'
+				if(curr_char != '-'){
+					ungetc(curr_char, stdin);
+					token->type = T_SUB;
+					// Vracim token
+					return 0;
+				}
+				// Je to komentar
+				else {
+					state = COMMENT_DECIDE;
+					break;
+				}
 			
 			case ADD:
 				token->type = T_ADD;
@@ -551,8 +562,59 @@ int get_token(token_t *token){
 				state = STRING_VALID;
 				break;
 			
+			case COMMENT_DECIDE:
+				printf("COMMENT DECIDE");
+				if(curr_char == '['){
+					curr_char = getc(stdin);
+					if(curr_char == '['){
+						state = COMMENT_BLOCK;
+						break;
+					} else {
+						// Chyba
+						// --[*
+						// nespravny komentar
+						break;
+					}
+				}
+				// Radkovy komentar
+				else {
+					ungetc(curr_char, stdin);
+					state = COMMENT_LINE;
+					break;
+				}
 
-				
+			case COMMENT_LINE:
+				while(curr_char != '\n' && curr_char != EOF){
+					curr_char = getc(stdin);
+				}
+				if(curr_char == EOF){
+					token->type = T_EOF;
+					return 0;
+				}
+				ungetc(curr_char, stdin);
+				state = START;
+				break;
+
+			case COMMENT_BLOCK:
+				while(1){
+					if(curr_char == ']'){
+						curr_char = getc(stdin);
+						if(curr_char == EOF){
+							token->type = T_EOF;
+							return 0;
+						}
+						if(curr_char == ']'){
+							state = START;
+							break;
+						}
+					}
+					if(curr_char == EOF){
+						token->type = T_EOF;
+						return 0;
+					}
+					curr_char = getc(stdin);
+				}
+				break;
 		}
 
 		if(curr_char == EOF){
