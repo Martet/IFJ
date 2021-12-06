@@ -22,7 +22,7 @@ void token_print(token_t *token){
 	if(token->type == T_KW || token->type == T_ID || token->type == T_STRING)
 		printf("data: %s\n", token->data);
 	if(token->type == T_INTEGER)
-		printf("integer: %i\n", token->integer);
+		printf("integer: %lli\n", token->integer);
 	if(token->type == T_NUMBER)
 		printf("number: %f\n", token->number);
 	printf("END Token\n");
@@ -273,8 +273,8 @@ int get_token(token_t *token){
 				else if(get_char_type(curr_char) == 1){
 					token_data_append(token, curr_char);
 					char *ptr;
-					long result = strtol(token->data, &ptr,10);
-					token->integer = (int) result;
+					long long result = strtoll(token->data, &ptr,10);
+					token->integer = result;
 					break;
 				}
 				// Jiny znak, vratim ho do stdin
