@@ -31,8 +31,6 @@ void token_print(token_t *token){
 int token_data_init(token_t *token){
     token->data = malloc(1);
     if(token->data == NULL){
-        // TODO chyba
-        // return -1;
 	exit(99);
     }
     token->data[0] = '\0';
@@ -43,11 +41,26 @@ int token_data_init(token_t *token){
 int token_data_append(token_t *token, char c){
     int len = strlen(token->data);
     token->data = realloc(token->data , len + 1 + 1);
-    // TODO check realloc success
+    if(token->data == NULL){
+	exit(99);
+    }
     token->data[len] = c;
     token->data[len+1] = '\0';
 
     return 0;
+}
+
+int token_data_remove_last_char(token_t *token){
+	int len = strlen(token->data);
+	// Nelze mazat do minusu
+	if(len != 0){
+		token->data = realloc(token->data , len);
+		if(token->data == NULL){
+			exit(99);
+		}
+		token->data[len-1] = '\0';
+	}
+	return 0;
 }
 
 int token_data_clear(token_t *token){
@@ -241,6 +254,11 @@ int get_token(token_t *token){
 							ungetc(curr_char, stdin);
 							break;
 						}
+						else {
+							// Nic jineho nelze - neni pravda lze whitespace
+							// Error
+							// return 1;
+						}
 						break;
 				}
 				break;
@@ -294,9 +312,16 @@ int get_token(token_t *token){
 					// ungetc(curr_char, stdin);
 					break;
 				}
+				// Muze byt jeste cislo
+				else if(get_char_type(curr_char) == 1){
+					state = EXPONENT_SIGN;
+					ungetc(curr_char, stdin);
+					break;
+				}
 				// Zadne jine znaky mit nemuzu
 				else {
-					// TODO Error
+					// Chyba
+					return 1;
 				}
 				break;
 
@@ -309,7 +334,8 @@ int get_token(token_t *token){
 				}
 				// Zadne jine znaky mit nemuzu
 				else {
-					// TODO Error
+					// Chyba
+					return 1;
 				}
 				break;
 			
@@ -322,7 +348,8 @@ int get_token(token_t *token){
 				}
 				// Zadne jine znaky mit nemuzu
 				else {
-					// TODO Error
+					// Chyba
+					return 1;
 				}
 				break;
 				
@@ -354,8 +381,9 @@ int get_token(token_t *token){
 					break;
 				}
 				// Jiny znak neocekavam
+				// napr .+
 				else {
-					// TODO Error
+					return 1;
 				}
 				break;
 			
@@ -373,7 +401,8 @@ int get_token(token_t *token){
 				}
 				// Jiny znak neocekavam
 				else {
-					// TODO Error
+					// Error
+					return 1;
 				}
 				break;
 			
@@ -456,7 +485,7 @@ int get_token(token_t *token){
 
 			case COMMA:
 				token->type = T_COMMA;
-				// Vracaim token
+				// Vracim token
 				return 0;
 
 			case DIV:
@@ -505,6 +534,10 @@ int get_token(token_t *token){
 				return 0;
 			
 			case STRING_START:
+				// Neukonceny string = chyba
+				if(curr_char == '\n' || curr_char == EOF){
+					return 1;
+				}
 				if(curr_char == '"'){
 					// Vstup "" -> initializuji prazdny string
 					token_data_init(token);
@@ -519,17 +552,26 @@ int get_token(token_t *token){
 				}
 			
 			case STRING_CHECK_ASCII:
+				// Neukonceny string = chyba
+				if(curr_char == '\n' || curr_char == EOF){
+					return 1;
+				}
 				if((curr_char >= ' ') && (curr_char != '"')){
 					token_data_append(token, curr_char);
 					state = STRING_VALID;
 					break;
 				}
 				else {
-					// TODO Error?
+					// Error
+					return 1;
 				}
 				break;
 			
 			case STRING_VALID:
+				// Neukonceny string == chyba
+				if(curr_char == '\n' || curr_char == EOF){
+					return 1;
+				}
 				if(curr_char == '\\'){
 					state = STRING_BACKSLASH;
 					token_data_append(token, curr_char);
@@ -547,14 +589,18 @@ int get_token(token_t *token){
 				}
 
 			case STRING_BACKSLASH:
+				// Neukonceny string == chyba
+				if(curr_char == '\n' || curr_char == EOF){
+					return 1;
+				}
 				if(curr_char == '"' || curr_char == '\\' || curr_char == 'n' || curr_char == 't'){
 					state = STRING_BACKSLASH_CORRECT;
 					ungetc(curr_char, stdin);
 					break;
 				}
 				else {
-					// TODO Error
-					break;
+					// Error
+					return 1;
 				}
 			
 			case STRING_BACKSLASH_CORRECT:
@@ -563,7 +609,6 @@ int get_token(token_t *token){
 				break;
 			
 			case COMMENT_DECIDE:
-				printf("COMMENT DECIDE");
 				if(curr_char == '['){
 					curr_char = getc(stdin);
 					if(curr_char == '['){
@@ -573,6 +618,7 @@ int get_token(token_t *token){
 						// Chyba
 						// --[*
 						// nespravny komentar
+						return 1;	
 						break;
 					}
 				}
