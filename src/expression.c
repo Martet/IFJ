@@ -166,7 +166,7 @@ int reduce(Stack* stack,IdentType typevar)
         topik = topik->next;
         cnt++;
     }
-    if (cnt==1 && (stack->top->type == I_ID || stack->top->type == I_NUMBER || stack->top->type == I_STRING || stack->top->type == I_INTEGER))
+    if (cnt == 1 && (stack->top->type == I_ID || stack->top->type == I_NUMBER || stack->top->type == I_STRING || stack->top->type == I_INTEGER))
     {
         char* data = stack->top->data;
         tableItem_t *item;
@@ -291,7 +291,7 @@ int solvedExpression(token_t *token)
     bool end = false;
     bool string = false;
     int cnt = 0;
-    boolen = false; //booleen
+    //boolen = false; //booleen
     char* Bdata = malloc(99);
     if (Bdata == NULL)
     {
@@ -305,6 +305,16 @@ int solvedExpression(token_t *token)
         IdentType Btype;
 
         // printf("token type %d",token->type);
+        if(token->type == T_ID && (s.top->type == I_ID || s.top->type== I_NON_TERM || s.top->type== I_STRING || s.top->type == NUMBER || s.top->type == INTEGER)) 
+        {
+            break;
+        }
+        if (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE )
+        {
+            break;
+        }
+
+
         if (token->type == T_STRING)
         {
             string = true;
@@ -338,11 +348,7 @@ int solvedExpression(token_t *token)
             
         }
         
-        if (boolen == true && (token->keyword == KW_DO || token->keyword == KW_THEN))
-        {
-            printf("%d ", token->keyword);
-            break;
-        }
+
         if (token->type == T_EOL || token->type == T_EOF || token->type == T_COMMA)
         {
             b = 5;
