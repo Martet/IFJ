@@ -23,7 +23,7 @@ const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
     {'>','>','0','>','0','>','>','<','0'}, // )
     {'>','>','0','>','0','>','>','>','0'}, // i
     {'<','<','<','0','<','D','<','<','<'}, // $
-    {'>','<','<','>','<','>','>','<','<'},  // <>
+    {'<','<','<','>','<','>','>','<','<'},  // <>
     {'<','<','<','>','<','>','>','<','<'},  // ..
     {'>','>','<','>','<','>','>','>','<'},  // #
 };
@@ -280,7 +280,7 @@ int solvedExpression(token_t *token)
         if (token->type == T_STRING)
         {
             string = true;
-            if (typevar == I_INTEGER || typevar == I_NUMBER)
+            if ((typevar == I_INTEGER || typevar == I_NUMBER)&& s.top->type!= I_HASH)
             {
                return 6;
             }
@@ -366,6 +366,7 @@ int solvedExpression(token_t *token)
                 // printf("jsem tu >  reduction \n ");
                     // printf("typevar = %d",typevar);
                 err = reduce(&s, typevar);
+                //Stack_Print(&s);
                 if(err)
                     return err;
                 //Stack_print(&s);
