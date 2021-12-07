@@ -130,7 +130,7 @@ int prog(token_t *token){
                     printf("LABEL %s\n", tItem->key);
                     printf("CREATEFRAME\n");
                     itemList_t *i = args;
-                    while(i->item){
+                    while(i && i->item){
                         printf("DEFVAR TF@%s\n", i->item->key);
                         printf("POPS TF@%s\n", i->item->key);
                         i = i->next;
@@ -228,15 +228,14 @@ int fdef_args_n(token_t *token, itemList_t *args){
         NEXT_CHECK_TYPE(token, T_ID);
         tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
         tItem->isFunc = false;
-        tItem->params = string_create(1);
+        tItem->types = string_create(1);
         list_append(args, tItem);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         if(type(token, false))
             return ERR_PARSE;
         tItem = func;
-        if(type(token, true))
-            return ERR_PARSE;
+        CALL_RULE(type, token, true);
         return fdef_args_n(token, args);
     }
     else
@@ -316,9 +315,10 @@ int stat(token_t *token){
             if(strlen(types) < count)
                 return ERR_SEM_ASSIGN; //MAYBE??
             while(list){
-                if(list->item->types[0] != types[i++])
-                    return ERR_SEM_ASSIGN; //TODO CHECK NIL AND INT TO NUMBER
+                if(list->item->types[0] != types[i] && types[i] != 'n')
+                    return ERR_SEM_ASSIGN; //TODO INT TO NUM CONVERSION
                 printf("POPS LF@%s\n", list->item->key);
+                i++;
                 list = list->next;
             }
             return stat(token);
@@ -346,8 +346,8 @@ int stat(token_t *token){
                 NEXT_TOKEN(token);
                 CALL_RULE(type, token, false);
                 
-                char *name = tItem->key;
-                printf("DEFVAR LF@%s_%d\n", name, depth);
+                tableItem_t *item = tItem;
+                printf("DEFVAR LF@%s_%d\n", item->key, depth);
 
                 if(token->type == T_ASSIGN){
                     NEXT_TOKEN(token);
@@ -358,18 +358,24 @@ int stat(token_t *token){
                             CALL_RULE(args, token);
 
                             printf("CALL %s\n", tItem->key);
-                            printf("POPS LF%s_%d\n", name, depth);
+                            printf("POPS LF%s_%d\n", item->key, depth);
                         }
                         else if((tItem = table_search_all(local_table, token->data))){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
-                            CALL_RULE(solvedExpression, token);
-                            printf("POPS LF@%s_%d\n", name, depth);
+                            char exprType;
+                            CALL_EXPR(token, &exprType);
+                            if(item->types[0] != exprType && exprType != 'n')
+                                return ERR_SEM_PARAM;
+                            printf("POPS LF@%s_%d\n", item->key, depth);
                         }
                         else
                             return ERR_SEM_DEF;
                     }
                     else{ ////<stat> -> local ID : <type> = EXPR <stat> (starting with term)
-                        CALL_RULE(solvedExpression, token);
-                        printf("POPS LF@%s_%d\n", name, depth);
+                        char exprType;
+                        CALL_EXPR(token, &exprType);
+                        if(item->types[0] != exprType && exprType != 'n')
+                            return ERR_SEM_PARAM;
+                        printf("POPS LF@%s_%d\n", item->key, depth);
                     }
                 }
 
@@ -377,7 +383,7 @@ int stat(token_t *token){
 
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
-                CALL_RULE(solvedExpression, token);
+                //CALL_EXPR(token);
                 CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
@@ -404,7 +410,7 @@ int stat(token_t *token){
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
-                CALL_RULE(solvedExpression, token);
+                //CALL_EXPR(token);
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
@@ -434,10 +440,10 @@ int stat(token_t *token){
 
             case KW_END: //<stat> -> end
                 table_list_delete(&local_table);
-                printf("POPFRAME\n");
                 if(depth == 0){
                     for(int i = 0; i < (int)strlen(currFunc->types); i++)
                         printf("PUSHS nil@nil\n");
+                    printf("POPFRAME\n");
                     printf("RETURN\n");
                 }
                 else
@@ -499,8 +505,9 @@ int EXPRs(token_t *token, bool *empty, char **types){
     }
     //<EXPRs> -> EXPR <EXPRs_n>
     *types = string_create(1);
-    CALL_RULE(solvedExpression, token);
-    string_append(types, 'n'); //TODO GET EXPRESSION TYPE
+    char exprType = 0;
+    CALL_EXPR(token, &exprType);
+    string_append(types, exprType);
     return EXPRs_n(token, empty, types);
 }
 
@@ -508,8 +515,9 @@ int EXPRs_n(token_t *token, bool *empty, char **types){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
-        CALL_RULE(solvedExpression, token);
-        string_append(types, 'n'); //TODO GET EXPRESSION TYPE
+        char exprType = 0;
+        CALL_EXPR(token, &exprType);
+        string_append(types, exprType);
         return EXPRs_n(token, empty, types);
     }
     else{ //<EXPRs_n> -> e

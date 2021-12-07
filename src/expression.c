@@ -145,7 +145,7 @@ IdentType TokentoIden(TokenType type){
     }
 }
 
-int reduce(Stack* stack,IdentType typevar)
+int reduce(Stack* stack, IdentType typevar, char *type)
 {
     ptrItem* topik = stack->top;
     int cnt = 0;
@@ -177,15 +177,19 @@ int reduce(Stack* stack,IdentType typevar)
                 if(!item)
                     return ERR_SEM_DEF;
                 printf("PUSHS LF@%s\n", data);
+                *type = item->types[0];
                 break;
             case I_NUMBER:
                 printf("PUSHS float@%s\n", data); //TODO PRINT IN CORRECT FORMAT
+                *type = 'N';
                 break;
             case I_STRING:
                 printf("PUSHS string@%s\n", data);
+                *type = 'S';
                 break;
             case I_INTEGER:
                 printf("PUSHS int@%s\n", data); //maybe print correct format
+                *type = 'I';
                 break;
         }
 
@@ -207,7 +211,10 @@ int reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        //printf("#E --> E \n");
+        
+        printf("STRLEN GF@op1 str@%s\n", data); //TODO PRINT CORRECT STR FORMAT
+        printf("PUSHS GF@op1\n");
+        *type = 'N';
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type >= I_PLUS && stack->top->next->type <= I_DIVIDE_INT && stack->top->next->next->type == I_NON_TERM)
     {
@@ -272,7 +279,8 @@ int reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        printf("E teckatecka E --> E: %s\n", stack->top->next->data);
+        printf("..\n");
+        //printf("E teckatecka E --> E: %s\n", stack->top->next->data);
         //generace operace stack->top->next->data
     }
     else 
@@ -284,7 +292,7 @@ int reduce(Stack* stack,IdentType typevar)
     return 0;
 }
 
-int solvedExpression(token_t *token)
+int solvedExpression(token_t *token, char *type)
 {
     Stack_Init(&s);
     Stack_Push(&s, I_DOLAR, NULL);
@@ -352,7 +360,7 @@ int solvedExpression(token_t *token)
             // printf("picitoje");
             break;
         }
-        if (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE )
+        if (token->type == T_KW && (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE))
         {
             break;
         }
@@ -430,7 +438,7 @@ int solvedExpression(token_t *token)
             case '>':
                 // printf("jsem tu >  reduction \n ");
                     // printf("typevar = %d",typevar);
-                err = reduce(&s, typevar);
+                err = reduce(&s, typevar, type);
                 //Stack_Print(&s);
                 if(err)
                     return err;
@@ -438,7 +446,7 @@ int solvedExpression(token_t *token)
                 break;
             case 'D':
                 // printf("redukujuu");
-                err = reduce(&s, typevar);
+                err = reduce(&s, typevar, type);
                 // printf("chyba");
                 if(err)
                     return err;
@@ -455,7 +463,7 @@ int solvedExpression(token_t *token)
     // printf("typevar = %d",typevar);
     while (a != 5)
     {
-        int err = reduce(&s, typevar);
+        int err = reduce(&s, typevar, type);
         if(err)
             return err;
         a = stack_to_table(&s);

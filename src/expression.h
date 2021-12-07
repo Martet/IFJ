@@ -50,9 +50,10 @@ IdentType TokentoIden(TokenType type);
  * @brief Funkce pro vyreseni vyrazu pres prediktivni tabulku vyrazu
  *
  * @param token token kterym vyraz zacina
+ * @param type ulozeni typu operace
  * @return Chybovy kod
  */
-int solvedExpression(token_t *token);
+int solvedExpression(token_t *token, char *type);
 
 /**
  * @brief Funkce pro získání indexu tokenu do tabulky symbolu
@@ -74,9 +75,10 @@ int stack_to_table(Stack *s);
  * @brief Funkce ktera tokeny na zasobniku zmeni na NON-TERM pomoci urcenych pravidel
  *
  * @param stack zasobnik s ulozenymi IdentType
+ * @param type ulozeni typu operace
  * @return kod chyby
  */
-int reduce(Stack* stack, IdentType typevar);
+int reduce(Stack* stack, IdentType typevar, char *type);
 
 #endif
 
