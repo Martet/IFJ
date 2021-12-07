@@ -364,6 +364,7 @@ int get_token(token_t *token){
 					break;
 				}
 				else {
+					ungetc(curr_char, stdin);
 					token_data_clear(token);
 					return 0;
 				}
