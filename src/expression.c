@@ -352,7 +352,7 @@ int solvedExpression(token_t *token)
             // printf("picitoje");
             break;
         }
-        if (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE )
+        if (token->type == T_KW && (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE))
         {
             break;
         }

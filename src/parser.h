@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include "scanner.h"
 #include "symtable.h"
+#include "expression.h"
 
 /**
  * @brief Navratovy kod pro chyby prekladace
@@ -104,8 +105,15 @@ tableList_t *local_table;
             NEXT_TOKEN(token);                                      \
     } while(0)
 
-#define PRINT_DEBUG printf("                Line %d: %s (%s)\n", __LINE__, __func__, token->data)
-//#define PRINT_DEBUG
+#define CALL_EXPR(token)                                            \
+    do{                                                             \
+        int err = solvedExpression(token);                          \
+        if(err) return err;                                         \
+        if((token)->type == T_EOL) NEXT_TOKEN(token);               \
+    } while(0)
+
+//#define PRINT_DEBUG printf("                Line %d: %s (%s)\n", __LINE__, __func__, token->data)
+#define PRINT_DEBUG
 
 /**
  * @brief Vytvori dynamicky alokovany string
