@@ -574,7 +574,6 @@ int get_token(token_t *token){
 				}
 				if(curr_char == '\\'){
 					state = STRING_BACKSLASH;
-					token_data_append(token, curr_char);
 					break;
 				}
 				else if(curr_char == '"'){
@@ -598,13 +597,56 @@ int get_token(token_t *token){
 					ungetc(curr_char, stdin);
 					break;
 				}
+				// bude to napr. \123
+				else if(get_char_type(curr_char) == 1){
+					state = STRING_BACKSLASH_ASCII;
+					ungetc(curr_char, stdin);
+					break;
+				}
 				else {
 					// Error
 					return 1;
 				}
 			
+			case STRING_BACKSLASH_ASCII:
+				char *str = malloc(3 + 1);
+				for(int i = 0; i < 3; i++){
+					if(get_char_type(curr_char) == 1){
+						str[i] = curr_char;
+					}
+					else {
+						// Chyba
+						return 1;
+					}
+					curr_char = getc(stdin);
+				}
+				// Posledni znak chci vratit
+				ungetc(curr_char,stdin);
+				// Nastavim ukoncovaci znak
+				str[3] = '\0';
+				long value = strtol(str, NULL,10);
+				int res = (int)value;
+				// Prevedu integer hodnotu ascii znaku na ascii znak
+				char finalChar = res;
+				free(str);
+				token_data_append(token, finalChar);
+				state = STRING_VALID;
+				break;
+			
 			case STRING_BACKSLASH_CORRECT:
-				token_data_append(token, curr_char);
+				if(curr_char == '"'){
+					token_data_append(token, '\"');
+				}
+				else if(curr_char == '\\'){
+					token_data_append(token, '\\');
+				}
+				else if(curr_char == 'n'){
+					token_data_append(token, '\n');
+				}
+				// \t
+				else {
+					token_data_append(token, '\t');
+				}
 				state = STRING_VALID;
 				break;
 			
