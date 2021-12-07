@@ -43,6 +43,9 @@ tableList_t *local_table;
     do{                                                             \
         if(get_token(token))                                        \
             return ERR_LEX;                                         \
+        while((token)->type == T_EOL)                                 \
+            if(get_token(token))                                    \
+                return ERR_LEX;                                     \
     } while(0)
 
 /**
@@ -101,7 +104,8 @@ tableList_t *local_table;
             NEXT_TOKEN(token);                                      \
     } while(0)
 
-#define PRINT_DEBUG printf("Line %d: %s (%s)\n", __LINE__, __func__, token->data)
+#define PRINT_DEBUG printf("                Line %d: %s (%s)\n", __LINE__, __func__, token->data)
+//#define PRINT_DEBUG
 
 /**
  * @brief Vytvori dynamicky alokovany string
@@ -258,20 +262,20 @@ int IDs_n(token_t *token, itemList_t *list);
  * 
  * @param token Dalsi token pro zpracovani
  * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
- * @param count Ukazatel na promennou, kam bude nastaven pocet zpracovanych vyrazu
+ * @param types Dynamicky string s typy vyrazu
  * @return int Chybovy kod
  */
-int EXPRs(token_t *token, bool *empty, int *count);
+int EXPRs(token_t *token, bool *empty, char **types);
 
 /**
  * @brief Implementace pravidla <EXPRs_n>
  * 
  * @param token Dalsi token pro zpracovani
  * @param empty Navraceni po epsilon pravidlu (kdyz true, necist dalsi token)
- * @param count Ukazatel na promennou, kam bude nastaven pocet zpracovanych vyrazu
+ * @param types Dynamicky string s typy vyrazu
  * @return int Chybovy kod
  */
-int EXPRs_n(token_t *token, bool *empty, int *count);
+int EXPRs_n(token_t *token, bool *empty, char **types);
 
 /**
  * @brief Implementace pravidla <type>

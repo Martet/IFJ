@@ -173,7 +173,7 @@ int reduce(Stack* stack,IdentType typevar)
 
         switch(stack->top->type){
             case I_ID:
-                item = table_search(global_table, data);
+                item = table_search_all(local_table, data);
                 if(!item)
                     return ERR_SEM_DEF;
                 printf("PUSHS LF@%s\n", data);
@@ -290,8 +290,6 @@ int solvedExpression(token_t *token)
     Stack_Push(&s, I_DOLAR, NULL);
     int typevar = 0;
     bool end = false;
-    bool string = false;
-    int cnt = 0;
     //boolen = false; //booleen
     char* Bdata = malloc(99);
     if (Bdata == NULL)
@@ -311,7 +309,6 @@ int solvedExpression(token_t *token)
 
         if (token->type == T_STRING)
         {
-            string = true;
             if ((typevar == I_INTEGER || typevar == I_NUMBER)&& s.top->type!= I_HASH)
             {
             //    printf("s");
