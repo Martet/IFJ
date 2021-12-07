@@ -255,9 +255,9 @@ int get_token(token_t *token){
 							break;
 						}
 						else {
-							// Nic jineho nelze
+							// Nic jineho nelze - neni pravda lze whitespace
 							// Error
-							return 1;
+							// return 1;
 						}
 						break;
 				}

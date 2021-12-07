@@ -11,6 +11,7 @@
 #include "parser.h"
 #include <stdlib.h>
 #include "expression.h"
+#include "symtable.h"
 
 #define TABLE_SIZE 9
 bool boolen;
@@ -19,11 +20,11 @@ const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
 //  |+-|*///| ( | ) | i | $ |<>  |.. |#|
     {'>','<','<','>','<','>','>','>','<'}, // +-
     {'>','>','<','>','<','>','>','>','<'}, // *///
-    {'<','<','<','=','<','0','<','>','<'}, // (
+    {'<','<','<','=','<','0','<','<','<'}, // (
     {'>','>','0','>','0','>','>','<','0'}, // )
     {'>','>','0','>','0','>','>','>','0'}, // i
     {'<','<','<','0','<','D','<','<','<'}, // $
-    {'>','<','<','>','<','>','>','<','<'},  // <>
+    {'<','<','<','>','<','>','>','<','<'},  // <>
     {'<','<','<','>','<','>','>','<','<'},  // ..
     {'>','>','<','>','<','>','>','>','<'},  // #
 };
@@ -156,7 +157,7 @@ int reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        printf("(E) --> E \n");
+        //printf("(E) --> E \n");
         return 0;
     }
     
@@ -168,18 +169,36 @@ int reduce(Stack* stack,IdentType typevar)
     if (cnt == 1 && (stack->top->type == I_ID || stack->top->type == I_NUMBER || stack->top->type == I_STRING || stack->top->type == I_INTEGER))
     {
         char* data = stack->top->data;
-        Stack_Pop(stack);
-        Stack_Pop(stack);
-        Stack_Push(stack,I_NON_TERM,stack->top->data);
-        printf("E: %s\n", data);
+        tableItem_t *item;
 
-        //generace E
+        switch(stack->top->type){
+            case I_ID:
+                item = table_search_all(local_table, data);
+                if(!item)
+                    return ERR_SEM_DEF;
+                printf("PUSHS LF@%s\n", data);
+                break;
+            case I_NUMBER:
+                printf("PUSHS float@%s\n", data); //TODO PRINT IN CORRECT FORMAT
+                break;
+            case I_STRING:
+                printf("PUSHS string@%s\n", data);
+                break;
+            case I_INTEGER:
+                printf("PUSHS int@%s\n", data); //maybe print correct format
+                break;
+        }
+
+        Stack_Pop(stack);
+        Stack_Pop(stack);
+        Stack_Push(stack,I_NON_TERM,data);
+        //printf("E: %s\n", data);
     }
     else if(cnt == 2 && stack->top->type == I_NON_TERM && stack->top->next->type == I_HASH)
     {
         if (typevar != I_STRING)
         {
-            // printf("what neni stringois");
+            //printf("what neni stringois");
             return 6;
         }
         
@@ -188,7 +207,7 @@ int reduce(Stack* stack,IdentType typevar)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        printf("#E --> E \n");
+        //printf("#E --> E \n");
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type >= I_PLUS && stack->top->next->type <= I_DIVIDE_INT && stack->top->next->next->type == I_NON_TERM)
     {
@@ -198,7 +217,26 @@ int reduce(Stack* stack,IdentType typevar)
             return 9;
         }
         char* data = NULL;
-        printf("E %d E --> E: \n", stack->top->next->type);
+        //printf("E %d E --> E: \n", stack->top->next->type);
+
+        switch(stack->top->next->type){
+            case I_PLUS:
+                printf("ADDS\n");
+                break;
+            case I_MINUS:
+                printf("SUBS\n");
+                break;
+            case I_MULTIPLAY:
+                printf("MULS\n");
+                break;
+            case I_DIVIDE:
+                printf("DIVS\n");
+                break;
+            case I_DIVIDE_INT:
+                printf("IDIVS\n");
+                break;
+        }
+
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
@@ -225,6 +263,7 @@ int reduce(Stack* stack,IdentType typevar)
         char* data = NULL;
         if (typevar != I_STRING)
         {
+            //printf("pico");
             return 6;
         }
         
@@ -238,7 +277,7 @@ int reduce(Stack* stack,IdentType typevar)
     }
     else 
     {
-        printf("hello chyba");
+        // printf("hello chyba");
         return 6;
     }
 
@@ -251,8 +290,6 @@ int solvedExpression(token_t *token)
     Stack_Push(&s, I_DOLAR, NULL);
     int typevar = 0;
     bool end = false;
-    bool string = false;
-    int cnt = 0;
     //boolen = false; //booleen
     char* Bdata = malloc(99);
     if (Bdata == NULL)
@@ -265,26 +302,34 @@ int solvedExpression(token_t *token)
         int a = stack_to_table(&s);
         int b;
         IdentType Btype;
-
+        // token_print(token);
         // printf("token type %d",token->type);
-        if(token->type == T_ID && (s.top->type == I_ID || s.top->type== I_NON_TERM || s.top->type== I_STRING || s.top->type == NUMBER || s.top->type == INTEGER)) 
-        {
-            break;
-        }
-        if (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE )
-        {
-            break;
-        }
+
 
 
         if (token->type == T_STRING)
         {
-            string = true;
-            if (typevar == I_INTEGER || typevar == I_NUMBER)
+            if ((typevar == I_INTEGER || typevar == I_NUMBER)&& s.top->type!= I_HASH)
             {
+            //    printf("s");
                return 6;
             }
+            if (s.top->type == I_PLUS || s.top->type == I_MINUS || s.top->type == I_MULTIPLAY || s.top->type == I_DIVIDE || s.top->type == I_DIVIDE_INT)
+            {
+                // printf("d");
+                return 6;
+            }
+            
         }
+        if (s.top->type == I_STRING && s.top->next->next->type != I_HASH)
+        {
+            if (token->type == T_ADD || token->type == T_SUB || token->type == T_MUL || token->type == T_DIV || token->type == T_DIV_INT)
+            {
+                // printf("v");
+                return 6;
+            }
+        }
+        
         
         if (s.top->type != I_NON_TERM)
         {
@@ -296,15 +341,26 @@ int solvedExpression(token_t *token)
             {
                 typevar = I_INTEGER;
             }
-            else if (s.top->type == I_STRING)
+            if (s.top->type == I_STRING)
             {
                 typevar = I_STRING;
             }
+         }
+        if(token->type == T_ID && (s.top->type == I_ID || s.top->type== I_NON_TERM || s.top->type == I_STRING || s.top->type == I_NUMBER || s.top->type == I_INTEGER)) 
+        {
+            // Stack_Print(&s);
+            // printf("picitoje");
+            break;
+        }
+        if (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE )
+        {
+            break;
         }
         if (token->type == T_CONCAT)
         {
             if (typevar != I_STRING)
             {
+                // printf("hellu");
                 return 6;
             }
             
@@ -329,7 +385,7 @@ int solvedExpression(token_t *token)
             }
             else if(Btype == I_INTEGER)
             {          
-                sprintf(Bdata, "%d", token->integer);
+                sprintf(Bdata, "%lld", token->integer);
             }
             else if (Btype == I_STRING)
             {         
@@ -339,10 +395,10 @@ int solvedExpression(token_t *token)
             {
                 sprintf(Bdata, "%f", token->number);
             }
-            else
+            /*else
             {
-                //strcpy(Bdata,"                            ");
-            }
+                strcpy(Bdata,"                            ");
+            }*/
             
         }
         //printf("  \n indexy  %d , %d \n",a,b);
@@ -352,20 +408,30 @@ int solvedExpression(token_t *token)
             case '=':
                 Stack_Push(&s, Btype, Bdata);
                 // printf("jsem tu = \n");
-                get_token(token);
+                err = get_token(token);
+                if (err)
+                {
+                    return err;
+                }
                 break;
             case '<':
                 // printf("jsem tu <  ");
                 Stack_InsertBeforeNonTerm(&s, I_HALT, NULL); //<
                 Stack_Push(&s, Btype, Bdata);
                 //Stack_Print(&s); //tisknu
+                err = get_token(token);
+                if (err)
+                {
+                    return err;
+                }
+                
                 // token_print(token);
-                get_token(token);
                 break;
             case '>':
                 // printf("jsem tu >  reduction \n ");
                     // printf("typevar = %d",typevar);
                 err = reduce(&s, typevar);
+                //Stack_Print(&s);
                 if(err)
                     return err;
                 //Stack_print(&s);
@@ -373,11 +439,12 @@ int solvedExpression(token_t *token)
             case 'D':
                 // printf("redukujuu");
                 err = reduce(&s, typevar);
+                // printf("chyba");
                 if(err)
                     return err;
                 break;
             default:
-                printf("haha chyba");
+                // printf("haha chyba");
                 return 6;
         }
     }

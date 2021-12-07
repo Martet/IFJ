@@ -54,3 +54,4 @@ dkms.conf
 .vscode
 ifj
 .vs
+.gdb_history
