@@ -105,9 +105,9 @@ tableList_t *local_table;
             NEXT_TOKEN(token);                                      \
     } while(0)
 
-#define CALL_EXPR(token)                                            \
+#define CALL_EXPR(token, Ttype)                                     \
     do{                                                             \
-        int err = solvedExpression(token);                          \
+        int err = solvedExpression(token, Ttype);                   \
         if(err) return err;                                         \
         if((token)->type == T_EOL) NEXT_TOKEN(token);               \
     } while(0)

@@ -315,9 +315,10 @@ int stat(token_t *token){
             if(strlen(types) < count)
                 return ERR_SEM_ASSIGN; //MAYBE??
             while(list){
-                /*if(list->item->types[0] != types[i++])
-                    return ERR_SEM_ASSIGN;*/ //TODO CHECK NIL AND INT TO NUMBER
+                if(list->item->types[0] != types[i] && types[i] != 'n')
+                    return ERR_SEM_ASSIGN; //TODO INT TO NUM CONVERSION
                 printf("POPS LF@%s\n", list->item->key);
+                i++;
                 list = list->next;
             }
             return stat(token);
@@ -345,8 +346,8 @@ int stat(token_t *token){
                 NEXT_TOKEN(token);
                 CALL_RULE(type, token, false);
                 
-                char *name = tItem->key;
-                printf("DEFVAR LF@%s_%d\n", name, depth);
+                tableItem_t *item = tItem;
+                printf("DEFVAR LF@%s_%d\n", item->key, depth);
 
                 if(token->type == T_ASSIGN){
                     NEXT_TOKEN(token);
@@ -357,18 +358,24 @@ int stat(token_t *token){
                             CALL_RULE(args, token);
 
                             printf("CALL %s\n", tItem->key);
-                            printf("POPS LF%s_%d\n", name, depth);
+                            printf("POPS LF%s_%d\n", item->key, depth);
                         }
                         else if((tItem = table_search_all(local_table, token->data))){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
-                            CALL_EXPR(token);
-                            printf("POPS LF@%s_%d\n", name, depth);
+                            char exprType;
+                            CALL_EXPR(token, &exprType);
+                            if(item->types[0] != exprType && exprType != 'n')
+                                return ERR_SEM_PARAM;
+                            printf("POPS LF@%s_%d\n", item->key, depth);
                         }
                         else
                             return ERR_SEM_DEF;
                     }
                     else{ ////<stat> -> local ID : <type> = EXPR <stat> (starting with term)
-                        CALL_EXPR(token);
-                        printf("POPS LF@%s_%d\n", name, depth);
+                        char exprType;
+                        CALL_EXPR(token, &exprType);
+                        if(item->types[0] != exprType && exprType != 'n')
+                            return ERR_SEM_PARAM;
+                        printf("POPS LF@%s_%d\n", item->key, depth);
                     }
                 }
 
@@ -376,7 +383,7 @@ int stat(token_t *token){
 
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
-                CALL_EXPR(token);
+                //CALL_EXPR(token);
                 CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
@@ -403,7 +410,7 @@ int stat(token_t *token){
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
-                CALL_EXPR(token);
+                //CALL_EXPR(token);
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
@@ -498,8 +505,9 @@ int EXPRs(token_t *token, bool *empty, char **types){
     }
     //<EXPRs> -> EXPR <EXPRs_n>
     *types = string_create(1);
-    CALL_EXPR(token);
-    string_append(types, 'n'); //TODO GET EXPRESSION TYPE
+    char exprType = 0;
+    CALL_EXPR(token, &exprType);
+    string_append(types, exprType);
     return EXPRs_n(token, empty, types);
 }
 
@@ -507,8 +515,9 @@ int EXPRs_n(token_t *token, bool *empty, char **types){
     PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
-        CALL_EXPR(token);
-        string_append(types, 'n'); //TODO GET EXPRESSION TYPE
+        char exprType = 0;
+        CALL_EXPR(token, &exprType);
+        string_append(types, exprType);
         return EXPRs_n(token, empty, types);
     }
     else{ //<EXPRs_n> -> e
