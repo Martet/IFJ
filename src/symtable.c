@@ -1,82 +1,91 @@
+/**
+ * @file symtable.c
+ * @author Dominik Klon (xklond00@stud.fit.vutbr.cz)
+ * @author Martin Zmitko (xzmitk01@stud.fit.vutbr.cz)
+ * @brief Implementace tabulky symbolu pomoci binarniho vyhledavaciho stromu
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "symtable.h"
-/* 
-tableItem_t item{
-	defined=false,
-	isFunc=false,
-	->types=NULL;
-}; */
 
-/* tableItem_t *table_init(symtable_t **table){
-	table=NULL;
-} */
-void table_values_init(symtable_t *table){
-	table->item.types=NULL;
-	table->item.params=NULL;
-	table->item.key=NULL;
-	table->item.defined=false;
-	table->item.isFunc=false;
-
-	table->lptr=NULL;
-	table->rptr=NULL;
-
+tableItem_t *node_init(char *key){
+	tableItem_t *node = malloc(sizeof(tableItem_t));
+	if(!node)
+		exit(99);
+	node->lptr = NULL;
+	node->rptr = NULL;
+	node->key = key;
+	return node;
 }
-tableItem_t *table_insert(symtable_t *table, char *key){
 
-/////////////////////// KOD Z IALU
-
-	if (table == NULL) // konec rekurze
-	{
-		table = (symtable_t*) malloc(sizeof(struct symtable_t*));
-		if (table!=NULL)
-		{
-			strcpy(table->item.key, key);
-			
-			table->lptr = NULL;
-			table->rptr = NULL;
-		}
-		return &(table->item);
+tableItem_t *table_insert(tableItem_t **table, char *key){
+	if (*table == NULL){
+		*table = node_init(key);
+		return *table;
 	}
 	else{
-		int cmp;
-		cmp=strcmp(key,table->item.key);
-
-		if (cmp<0)
-		{
-			table_insert(table->lptr, key);
-		}
-		else if (cmp>0)
-		{
-			table_insert(table->rptr, key);
-		}
-		else{
-			table->item.key = key;
-		}
-		return NULL;
+		int cmp = strcmp(key, (*table)->key);
+		if(cmp < 0)
+			return table_insert(&((*table)->lptr), key);
+		else if(cmp > 0)
+			return table_insert(&((*table)->rptr), key);
+		else
+			return *table;
 	}
-//////////////////////  KOD Z IALU
-}// end of table_insert function
+}
 
-tableItem_t *table_search(symtable_t *table, char *key){
-	int cmp = strcmp(key,table->item.key);
+tableItem_t *table_search(tableItem_t *table, char *key){
 	if (table == NULL)
-	{
 		return NULL;
-	} 
  	else{
-		if (cmp==0)
-		{
-			return &(table->item);
-		}
-		else if (cmp>0)
-		{
+		int cmp = strcmp(key, table->key);
+		if(cmp == 0)
+			return table;
+		else if(cmp < 0)
 			return table_search(table->lptr, key);
-		}
-		else{
+		else
 			return table_search(table->rptr, key);
-		}
-	}//if table==NULL
+	}
+}
+
+tableList_t *table_list_init(){
+	tableList_t *list = malloc(sizeof(tableList_t));
+	if(list == NULL)
+		exit(99);
+	list->table = NULL;
+	list->next = NULL;
+	return list;
+}
+
+void table_list_insert(tableList_t **list){
+	if(*list == NULL){
+		*list = table_list_init();
+	}
+	else{
+		tableList_t *l = *list;
+		*list = table_list_init();
+		(*list)->next = l;
+	}
+}
+
+void table_list_delete(tableList_t **list){
+	tableList_t *next = (*list)->next;
+	free(*list);
+	*list = next;
+}
+
+tableItem_t *table_search_first(tableList_t *list, char *key){
+	return table_search(list->table, key);
+}
+
+tableItem_t *table_search_all(tableList_t *list, char *key){
+	while(list){
+		tableItem_t *result = table_search(list->table, key);
+		if(result)
+			return result;
+		list = list->next;
+	}
+	return NULL;
 }

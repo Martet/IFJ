@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -Wextra -pedantic -g
+CFLAGS=-std=c99 -Wall -Wextra -g
 TARGETS=scanner.o parser.o main.o stack.o expression.o symtable.o
 
 
