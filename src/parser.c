@@ -379,7 +379,6 @@ int stat(token_t *token){
             //build-in funkce
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
-<<<<<<< Updated upstream
 
             tokenList_t *list = t_list_init();
             CALL_RULE(args, token, &list);
@@ -394,8 +393,6 @@ int stat(token_t *token){
                 return ERR_SEM_PARAM;
             if(tItem->params[0] == 'w')
                 printf("PUSHS int@%ld\n", strlen(params));
-=======
->>>>>>> Stashed changes
             
             if(strcmp(tItem->key, "write") == 0){
                 // printf("%s\n",tItem->params);
