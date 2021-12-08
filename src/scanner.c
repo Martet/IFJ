@@ -9,8 +9,6 @@
 #include <stdlib.h>
 #include "scanner.h"
 
-char buffer[20];
-
 int lineCount = 1;
 
 void token_print(token_t *token){
@@ -192,24 +190,19 @@ int get_token(token_t *token){
 					case '.':
 						state = CONCAT_HALF;
 						// Zde nebudu vracet znak do stdin, protoze hledam stejny
-						// ungetc(curr_char, stdin);
 						break;
 					case '~':
 						state = EQ_NIL_HALF;
-						// ungetc(curr_char, stdin);
 						break;
 					case '=':
 						state = ASSIGN;
 						// Zde nebudu vracet znak do stdin, protoze hledam stejny
-						// ungetc(curr_char, stdin);
 						break;
 					case '>':
 						state = GREATER;
-						// ungetc(curr_char, stdin);
 						break;
 					case '<':
 						state = LESS;
-						// ungetc(curr_char, stdin);
 						break;
 					case ')':
 						state = PAR_R;
@@ -229,7 +222,6 @@ int get_token(token_t *token){
 						break;
 					case '/':
 						state = DIV;
-						// ungetc(curr_char, stdin);
 						break;
 					case '*':
 						state = MUL;
@@ -237,7 +229,6 @@ int get_token(token_t *token){
 						break;
 					case '-':
 						state = SUB;
-						// ungetc(curr_char, stdin);
 						break;
 					case '+':
 						state = ADD;
@@ -257,7 +248,7 @@ int get_token(token_t *token){
 							break;
 						}
 						else {
-							// Nic jineho nelze - neni pravda lze whitespace
+							// Nic jineho nelze
 							// Error
 							return 1;
 						}
@@ -266,6 +257,7 @@ int get_token(token_t *token){
 				break;
 
 			case ID_OR_KEYWORD:
+				// Pokud se nejedna o a-z,A-Z,0-9,_
 				if(get_char_type(curr_char) == 0 && curr_char != '_'){
 					is_keyword(token);
 					ungetc(curr_char, stdin);
@@ -280,14 +272,12 @@ int get_token(token_t *token){
 				if(curr_char == 'E'){
 					state = EXPONENT;
 					token_data_append(token, curr_char);
-					// ungetc(curr_char, stdin);
 					break;
 				}
 
 				else if(curr_char == '.'){
 					state = DECIMAL;
 					token_data_append(token,'.');
-					// ungetc(curr_char, stdin);
 					break;
 				}
 				// Je to cislo
@@ -436,11 +426,13 @@ int get_token(token_t *token){
 				return 0;
 			
 			case GREATER:
+				// >=
 				if(curr_char == '=') {
 					state = GREATER_EQ;
 					ungetc(curr_char, stdin);
 					break;
 				}
+				// =
 				else {
 					ungetc(curr_char, stdin);
 					token->type = T_GREATER;
@@ -454,11 +446,13 @@ int get_token(token_t *token){
 				return 0;
 
 			case LESS:
+				// <=
 				if(curr_char == '=') {
 					state = LESS_EQ;
 					ungetc(curr_char, stdin);
 					break;
 				}
+				// <
 				else {
 					ungetc(curr_char, stdin);
 					token->type = T_LESS;
@@ -561,7 +555,7 @@ int get_token(token_t *token){
 				}
 				if((curr_char >= ' ') && (curr_char != '"')){
 					if(curr_char != '\\')
-					token_data_append(token, curr_char);
+						token_data_append(token, curr_char);
 					else
 						ungetc(curr_char, stdin);
 					state = STRING_VALID;
@@ -615,6 +609,7 @@ int get_token(token_t *token){
 				}
 			
 			case STRING_BACKSLASH_ASCII:{
+				// Vlozim 3 znaky
 				char *str = malloc(3 + 1);
 				for(int i = 0; i < 3; i++){
 					if(get_char_type(curr_char) == 1){
@@ -630,6 +625,7 @@ int get_token(token_t *token){
 				ungetc(curr_char,stdin);
 				// Nastavim ukoncovaci znak
 				str[3] = '\0';
+				// Prevod na int
 				long value = strtol(str, NULL,10);
 				int res = (int)value;
 				// Ascii hodnota pouze 1-255
@@ -699,6 +695,7 @@ int get_token(token_t *token){
 					if(curr_char == ']'){
 						curr_char = getc(stdin);
 						if(curr_char == EOF){
+							// Neukonceny Block komentar
 							token->type = T_EOF;
 							return 1;
 						}
@@ -708,6 +705,7 @@ int get_token(token_t *token){
 						}
 					}
 					if(curr_char == EOF){
+						// Neukonceny Block komentar 
 						token->type = T_EOF;
 						return 1;
 					}
