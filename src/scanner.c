@@ -173,6 +173,8 @@ int get_token(token_t *token){
 		switch(state){
 			case START:
 				switch(curr_char){
+					case ' ': case '\t': case '\v': case '\f': case '\r':
+						break;
 					case EOF:
 						token->type = T_EOF;
 						return 0;
@@ -257,7 +259,7 @@ int get_token(token_t *token){
 						else {
 							// Nic jineho nelze - neni pravda lze whitespace
 							// Error
-							// return 1;
+							return 1;
 						}
 						break;
 				}
@@ -558,7 +560,10 @@ int get_token(token_t *token){
 					return 1;
 				}
 				if((curr_char >= ' ') && (curr_char != '"')){
+					if(curr_char != '\\')
 					token_data_append(token, curr_char);
+					else
+						ungetc(curr_char, stdin);
 					state = STRING_VALID;
 					break;
 				}
@@ -627,6 +632,10 @@ int get_token(token_t *token){
 				str[3] = '\0';
 				long value = strtol(str, NULL,10);
 				int res = (int)value;
+				// Ascii hodnota pouze 1-255
+				if(res < 1 || res > 255){
+					return 1;	
+				}
 				// Prevedu integer hodnotu ascii znaku na ascii znak
 				char finalChar = res;
 				free(str);
