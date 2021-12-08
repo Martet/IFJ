@@ -36,6 +36,7 @@ typedef enum identType { //cislo za popiskem je cislo pro enum
     I_HALT,       	// <<<<<<<<< 23
     I_NON_TERM, 	// 24
     I_EROR, 		//25
+	I_NILL,			//
 } IdentType;
 
 /**
@@ -44,7 +45,7 @@ typedef enum identType { //cislo za popiskem je cislo pro enum
  * @param type typ tokenu
  * @return typ identifikatoru
  */
-IdentType TokentoIden(TokenType type);
+IdentType TokentoIden(token_t *token);
 
 /**
  * @brief Funkce pro vyreseni vyrazu pres prediktivni tabulku vyrazu
@@ -61,7 +62,7 @@ int solvedExpression(token_t *token, char *type);
  * @param type typ tokenu
  * @return Index tokenu do tabulky symbolu
  */
-int get_index_to_table(TokenType type);
+int get_index_to_table(token_t *token);
 
 /**
  * @brief Funkce pro získání indexu na vrcholu zasobniku pro zasobnik s ulozenymi IdentType
