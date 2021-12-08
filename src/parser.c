@@ -107,7 +107,7 @@ void print_ifjstring(char *str){
 }
 
 int prog(token_t *token){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     switch(token->type){
         case T_KW:
             switch(token->keyword){
@@ -231,7 +231,7 @@ int prog(token_t *token){
 }
 
 int fdec_args(token_t *token){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdec_args> -> )
         return ERR_OK;
     else{ //<fdec_args> -> <type> <fdec_args_n>
@@ -241,7 +241,7 @@ int fdec_args(token_t *token){
 }
 
 int fdec_args_n(token_t *token){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdec_args_n> -> )
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdec_args_n> -> , <type> <fdec_args_n>
@@ -254,7 +254,7 @@ int fdec_args_n(token_t *token){
 }
 
 int fdef_args(token_t *token, itemList_t *args){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdef_args> -> )
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
@@ -275,7 +275,7 @@ int fdef_args(token_t *token, itemList_t *args){
 }
 
 int fdef_args_n(token_t *token, itemList_t *args){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_PAR_R) //<fdef_args_n> -> )
         return ERR_OK;
     else if(token->type == T_COMMA){ //<fdef_args_n> -> , ID : <type> <fdef_args_n>
@@ -297,7 +297,7 @@ int fdef_args_n(token_t *token, itemList_t *args){
 }
 
 int f_types(token_t *token, bool *empty){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_COLON){ //<f_types> -> : <types>
         NEXT_TOKEN(token);
         return types(token, empty);
@@ -309,13 +309,13 @@ int f_types(token_t *token, bool *empty){
 }
 
 int types(token_t *token, bool *empty){ //<types> -> <type> <types_n>
-//PRINT_DEBUG;
+PRINT_DEBUG;
     CALL_RULE(type, token, false);
     return types_n(token, empty);
 }
 
 int types_n(token_t *token, bool *empty){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_COMMA){ //<types_n> -> , <type> <types_n>
         NEXT_TOKEN(token);
         CALL_RULE(type, token, false);
@@ -354,7 +354,7 @@ int args_n(token_t *token, tokenList_t **list){
 }
 
 int stat(token_t *token){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_ID){
         tItem = table_search(global_table, token->data);
         if(!tItem){ //<stat> -> <IDs> <EXPRs> <stat>
@@ -376,7 +376,6 @@ int stat(token_t *token){
             return stat(token);
         }
         else{ //<stat> -> ID ( <args> <stat>
-            //build-in funkce
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
 
@@ -394,100 +393,9 @@ int stat(token_t *token){
             if(tItem->params[0] == 'w')
                 printf("PUSHS int@%ld\n", strlen(params));
             
-            if(strcmp(tItem->key, "write") == 0){
-                // printf("%s\n",tItem->params);
-                
-                while (token->type != T_PAR_R)
-                {
-                    if (token->type == T_STRING)
-                    {
-                        return stat(token);
-                        printf("WRITE string@%s\n",token->data);
-                    }
-                    else if (token->type == T_INTEGER)
-                    {
-                        printf("WRITE int@%lld\n",token->integer);
-                    }
-                    else if (token->type == T_NUMBER)
-                    {
-                        printf("WRITE float@%a\n", token->number);
-                    
-                    }
-                    
-                    else if (token->type == T_ID)
-                    {
-                        tItem = table_search_all(local_table,token->data);
-                        if (tItem == NULL)
-                        {
-                        return 3;
-                        }
-                        
-                        printf("WRITE TF@%s_%d\n",token->data, depth);
+            printf("CALL %s\n", tItem->key);
 
-                    }
-                    else {
-                        printf("CHYBA KOKOT\n");
-                        return 3;
-                    }
-                    // printf("PRED KONTROLOU JIZDENEK\n");
-                    // Kontrola zda neuzavreny
-                    if(token->type == T_EOF || token->type == T_EOL)
-                    {
-                        // printf("CHYBA V IFU xd\n");
-                        NEXT_CHECK_TYPE(token,T_PAR_R);
-                    }
-                    NEXT_TOKEN(token);
-                    if (token->type == T_COMMA)
-                    {
-
-                        NEXT_TOKEN(token);
-                        if (token->type==T_PAR_R)
-                        {
-                            return 2;
-                        }
-                        
-                    }
-                    else if (token->type == T_PAR_R)
-                    {
-                        break;
-                    }
-                    else {
-                        // printf("CHYBA V ELSU\n");
-                        NEXT_CHECK_TYPE(token, T_PAR_R);
-                    }
-
-
-                }
-                    NEXT_TOKEN(token);
-                    // token_print(token);
-
-
-            }
-            else if(strcmp(tItem->key,"tointeger"))
-            {
-                if (token->type == T_NUMBER)
-                {
-                    // Vratit (int) cislo 
-                    token->number = (int) token->number;
-                    printf("%f\n", token->number);
-                }
-
-                else if(token->type == T_KW && token->keyword == KW_NIL)
-                {
-                    // Vratit null
-                }
-                else
-                {
-                    return 3; //TODO je to spravny kod ? not sure
-                }
-            }
-            else {
-                CALL_RULE(args, token);
-                printf("CALL %s\n", tItem->key);
-                return stat(token);
-            }
-
-            // return stat(token);
+            return stat(token);
         }
     }
     else if(token->type == T_KW){
@@ -637,7 +545,7 @@ int stat(token_t *token){
 }
 
 int IDs(token_t *token, itemList_t *list){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_ID){ //<IDs> -> ID <IDs_n>
         tItem = table_search_all(local_table, token->data);
         if(!tItem)
@@ -651,7 +559,7 @@ int IDs(token_t *token, itemList_t *list){
 }
 
 int IDs_n(token_t *token, itemList_t *list){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_ASSIGN) //<IDs_n> -> =
         return ERR_OK;
     else if(token->type == T_COMMA){ //<IDs_n> -> , ID <IDs_n>
@@ -668,7 +576,7 @@ int IDs_n(token_t *token, itemList_t *list){
 }
 
 int EXPRs(token_t *token, bool *empty, char **types){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_ID){
         tItem = table_search(global_table, token->data);
         if(tItem){ ////<EXPRs> -> ID ( <args>
@@ -703,7 +611,7 @@ int EXPRs(token_t *token, bool *empty, char **types){
 }
 
 int EXPRs_n(token_t *token, bool *empty, char **types){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type == T_COMMA){ //<EXPRs_n> -> , EXPR <EXPRs_n>
         NEXT_TOKEN(token);
         char exprType = 0;
@@ -718,7 +626,7 @@ int EXPRs_n(token_t *token, bool *empty, char **types){
 }
 
 int type(token_t *token, bool params){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     if(token->type != T_KW)
         return ERR_PARSE;
     char type;
@@ -753,7 +661,7 @@ int type(token_t *token, bool params){
 }
 
 int term(token_t *token, char **types){
-    //PRINT_DEBUG;
+    PRINT_DEBUG;
     tableItem_t *item;
     switch(token->type){
         case T_ID:

@@ -1,11 +1,2 @@
-require "ifj21"
-function main() : integer
-local index : integer = 5
-if index >= nil then 
-local adolf : integer = index + 5
-else
-return 2
-end
-return 1
-end
-main()
+()
+konecna
