@@ -175,7 +175,7 @@ int reduce(Stack* stack, IdentType typevar, char *type)
                 item = table_search_all(local_table, data);
                 if(!item)
                     return ERR_SEM_DEF;
-                printf("PUSHS LF@%s_%d\n", item->key, item->id);
+                printf("PUSHS LF@%s$%d\n", item->key, item->id);
                 *type = item->types[0];
                 break;
             case I_NUMBER:

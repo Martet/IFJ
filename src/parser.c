@@ -403,11 +403,11 @@ int stat(token_t *token){
                 NEXT_TOKEN(token);
                 CALL_EXPR(token, &exprType);
                 if(exprType == 'n'){
-                    printf("JUMP ELSE$%d\n", labelID);
+                    printf("JUMP %s$ELSE$%d\n", currFunc->key, labelID);
                 }
                 else if(exprType == 'b'){
                     printf("PUSHS bool@false\n");
-                    printf("JUMPIFEQS ELSE$%d\n", labelID);
+                    printf("JUMPIFEQS %s$ELSE$%d\n", currFunc->key, labelID);
                 }
 
                 CHECK_KW(token, KW_THEN);
@@ -416,36 +416,36 @@ int stat(token_t *token){
                 
                 depth++;
                 CALL_RULE(stat, token);
-                printf("JUMP ENDIF$%d\n", labelID);
+                printf("JUMP %s$ENDIF$%d\n", currFunc->key, labelID);
 
                 table_list_insert(&local_table);
 
-                printf("LABEL ELSE$%d\n", labelID);
+                printf("LABEL %s$ELSE$%d\n", currFunc->key, labelID);
                 depth++;
                 CALL_RULE(stat, token);
-                printf("LABEL ENDIF$%d\n", labelID++);
+                printf("LABEL %s$ENDIF$%d\n", currFunc->key, labelID++);
 
                 return stat(token);
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
-                printf("LABEL WHILE$%d\n", labelID);
+                printf("LABEL %s$WHILE$%d\n", currFunc->key, labelID);
                 CALL_EXPR(token, &exprType);
                 if(exprType == 'n'){
-                    printf("JUMP WHILE_END$%d\n", labelID);
+                    printf("JUMP %s$WHILE_END$%d\n", currFunc->key, labelID);
                 }
                 else if(exprType == 'b'){
                     printf("PUSHS bool@false\n");
-                    printf("JUMPIFEQS WHILE_END$%d\n", labelID);
+                    printf("JUMPIFEQS %s$WHILE_END$%d\n", currFunc->key, labelID);
                 }
 
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
                 depth++;
                 CALL_RULE(stat, token);
-                printf("JUMP WHILE$%d\n", labelID);
-                printf("LABEL WHILE_END$%d\n", labelID);
+                printf("JUMP %s$WHILE$%d\n", currFunc->key, labelID);
+                printf("LABEL %s$WHILE_END$%d\n", currFunc->key, labelID);
                 labelID++;
                 return stat(token);
 
