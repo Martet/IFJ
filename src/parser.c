@@ -56,18 +56,22 @@ itemList_t *list_init(){
     return list;
 }
 
-void list_append(itemList_t *list, tableItem_t *item){
-    if(!list->item)
+void list_append(itemList_t *list, tableItem_t *item, tokenList_t *args){
+    if(!list->item){
         list->item = item;
+        list->args = args;
+    }
     else{
         while(list->next)
             list = list->next;
         if(list->item){
             list->next = list_init();
             list->next->item = item;
+            list->next->args = args;
         }
         else{
             list->item = item;
+            list->args = args;
         }
     }
 }
@@ -196,7 +200,7 @@ int prog(token_t *token){
             
             if(!callList)
                 callList = list_init();
-            list_append(callList, tItem); //TODO SOMETHIGN WITH THIS SHIT
+            list_append(callList, tItem, list); //TODO SOMETHIGN WITH THIS SHIT
 
             return prog(token);
 
@@ -205,6 +209,17 @@ int prog(token_t *token){
             while(callList){
                 itemList_t *item = callList;
                 callList = callList->next;
+
+                char *params = string_create(1);
+                while(item->args && item->args->item){
+                    int err = term(item->args->item, &params);
+                    if(err) return err;
+                    item->args = item->args->next;
+                }
+                if(check_types(tItem->params, params))
+                    return ERR_SEM_PARAM;
+                if(tItem->params[0] == 'w')
+                    printf("PUSHS int@%ld\n", strlen(params));
                 printf("CALL %s\n", item->item->key);
                 free(item);
             }
@@ -246,7 +261,7 @@ int fdef_args(token_t *token, itemList_t *args){
         tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
         tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
         tItem->types = string_create(1);
-        list_append(args, tItem);
+        list_append(args, tItem, NULL);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         if(type(token, false))
@@ -268,7 +283,7 @@ int fdef_args_n(token_t *token, itemList_t *args){
         NEXT_CHECK_TYPE(token, T_ID);
         tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
         tItem->types = string_create(1);
-        list_append(args, tItem);
+        list_append(args, tItem, NULL);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
         if(type(token, false))
@@ -535,7 +550,7 @@ int IDs(token_t *token, itemList_t *list){
         tItem = table_search_all(local_table, token->data);
         if(!tItem)
             return ERR_SEM_DEF;
-        list_append(list, tItem);
+        list_append(list, tItem, NULL);
         NEXT_TOKEN(token);
         return IDs_n(token, list);
     }
@@ -552,7 +567,7 @@ int IDs_n(token_t *token, itemList_t *list){
         tItem = table_search_all(local_table, token->data);
         if(!tItem)
             return ERR_SEM_DEF;
-        list_append(list, tItem);
+        list_append(list, tItem, NULL);
         NEXT_TOKEN(token);
         return IDs_n(token, list);
     }

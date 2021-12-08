@@ -28,15 +28,16 @@ typedef enum errCode {
     ERR_ZERO
 } ErrCode;
 
-typedef struct ItemList {
-    struct ItemList *next;
-    tableItem_t *item;
-} itemList_t;
-
 typedef struct TokenList {
     struct TokenList *next;
     token_t *item;
 } tokenList_t;
+
+typedef struct ItemList {
+    struct ItemList *next;
+    tableItem_t *item;
+    tokenList_t *args;
+} itemList_t;
 
 tableItem_t *global_table;
 tableList_t *local_table;
@@ -157,8 +158,9 @@ itemList_t *list_init();
  * 
  * @param list List pro upravu
  * @param item Polozka pro pridani
+ * @param args seznam argumentu funkce
  */
-void list_append(itemList_t *list, tableItem_t *item);
+void list_append(itemList_t *list, tableItem_t *item, tokenList_t *args);
 
 /**
  * @brief Tisk stringu podle formatu pro ifjcode

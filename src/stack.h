@@ -1,3 +1,9 @@
+/**
+ * @file stack.h
+ * @author Petr Hýbl (xhyblp01@stud.fit.vutbr.cz)
+ * @brief Deklarace pomocnych funkci pro zasobnik
+*/
+
 #include <stdio.h>
 
 #ifndef STACK_H
