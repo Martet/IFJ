@@ -29,6 +29,7 @@ const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
 };
 
 Stack s;
+bool nill;
 
 int stack_to_table(Stack *s)
 {
@@ -46,6 +47,9 @@ int stack_to_table(Stack *s)
     switch (A)
     {
     case I_ID: case I_NUMBER: case I_STRING: case I_INTEGER:
+        return 4;
+    case I_NULL:
+        nill = true;
         return 4;              
     case I_PLUS: case I_MINUS:
         return 0;
@@ -68,9 +72,15 @@ int stack_to_table(Stack *s)
     }
 }
 
-int get_index_to_table(TokenType type)
+int get_index_to_table(token_t *token)
 {
-    switch (type)
+    if (token->type== T_KW && token->keyword == KW_NIL)
+    {
+        nill = true;
+        return 4;
+    }
+    
+    switch (token->type)
     {
     case T_ID: case T_NUMBER: case T_INTEGER: case T_STRING:
         return 4;
@@ -95,8 +105,14 @@ int get_index_to_table(TokenType type)
     }
 }
 
-IdentType TokentoIden(TokenType type){
-    switch (type)
+IdentType TokentoIden(token_t *token){
+    if (token->keyword == KW_NIL && token->type == T_KW)
+    {
+        nill = true;
+        return I_NILL;
+    }
+    
+    switch (token->type)
     {
     case T_ID:
         return I_ID;
@@ -164,7 +180,7 @@ int reduce(Stack* stack, IdentType typevar, char *type)
         topik = topik->next;
         cnt++;
     }
-    if (cnt == 1 && (stack->top->type == I_ID || stack->top->type == I_NUMBER || stack->top->type == I_STRING || stack->top->type == I_INTEGER))
+    if (cnt == 1 && (stack->top->type == I_ID || stack->top->type == I_NUMBER || stack->top->type == I_STRING || stack->top->type == I_INTEGER || stack->top->type == I_NILL))
     {
         char* data = stack->top->data;
         tableItem_t *item;
@@ -192,9 +208,10 @@ int reduce(Stack* stack, IdentType typevar, char *type)
                 printf("PUSHS int@%s\n", data);
                 *type = 'I';
                 break;
-            case I_NULL:
+            case I_NILL:
                 printf("PUSHS nil@nil\n");
                 *type = 'n';
+                nill = true;
                 break;
         }
 
@@ -343,6 +360,7 @@ int reduce(Stack* stack, IdentType typevar, char *type)
 
 int solvedExpression(token_t *token, char *type)
 {
+    nill = false;
     Stack_Init(&s);
     Stack_Push(&s, I_DOLAR, NULL);
     int typevar = 0;
@@ -436,8 +454,8 @@ int solvedExpression(token_t *token, char *type)
         }
         else
         {
-            b = get_index_to_table(token->type);
-            Btype = TokentoIden(token->type);
+            b = get_index_to_table(token);
+            Btype = TokentoIden(token);
 
             if (Btype == I_ID)
             {
@@ -461,6 +479,22 @@ int solvedExpression(token_t *token, char *type)
             }*/
             
         }
+        if (nill)
+        {
+            // printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+            // printf("type %d",token->type);
+            // printf("s type %d",s.top->type);
+            if ((s.top->type == I_EQ_NIL || s.top->type == I_EQ) || (token->type== T_EQ || token->type == T_EQ_NIL))
+            {
+                
+            }
+            else
+            {
+                return 8;
+            }
+              
+        }
+        
         //printf("  \n indexy  %d , %d \n",a,b);
         int err;
         switch (Precedence_table[a][b])
@@ -506,8 +540,10 @@ int solvedExpression(token_t *token, char *type)
             default:
                 // printf("haha chyba");
                 return 6;
+
         }
     }
+
     // printf("konecna vystupovat \n");
     //Stack_print(&s);
     int a = stack_to_table(&s);
