@@ -334,6 +334,7 @@ int stat(token_t *token){
         }
     }
     else if(token->type == T_KW){
+        char exprType;
         switch(token->keyword){
             case KW_LOCAL:
                 NEXT_CHECK_TYPE(token, T_ID);
@@ -383,46 +384,51 @@ int stat(token_t *token){
 
             case KW_IF: //<stat> -> if EXPR then <stat> else <stat> <stat>
                 NEXT_TOKEN(token);
-                //CALL_EXPR(token);
+                CALL_EXPR(token, &exprType);
+                if(exprType == 'n'){
+                    printf("JUMP ELSE_%d\n", labelID);
+                }
+                else if(exprType == 'b'){
+                    printf("PUSHS bool@false\n");
+                    printf("JUMPIFEQS ELSE_%d\n", labelID);
+                }
+
                 CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
                 
-                printf("CREATEFRAME\n");
-                printf("PUSHFRAME\n");
                 depth++;
                 CALL_RULE(stat, token);
-                printf("POPFRAME\n");
+                printf("JUMP ENDIF_%d\n", labelID);
 
-                CHECK_KW(token, KW_ELSE);
-                NEXT_TOKEN(token);
                 table_list_insert(&local_table);
 
                 printf("LABEL ELSE_%d\n", labelID);
-                printf("CREATEFRAME\n");
-                printf("PUSHFRAME\n");
+                depth++;
                 CALL_RULE(stat, token);
-                depth--;
-                printf("POPFRAME\n");
                 printf("LABEL ENDIF_%d\n", labelID++);
 
                 return stat(token);
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
-                //CALL_EXPR(token);
+                table_list_insert(&local_table);
+                printf("LABEL WHILE_%d\n", labelID);
+                CALL_EXPR(token, &exprType);
+                if(exprType == 'n'){
+                    printf("JUMP WHILE_END_%d\n", labelID);
+                }
+                else if(exprType == 'b'){
+                    printf("PUSHS bool@false\n");
+                    printf("JUMPIFEQS WHILE_END_%d\n", labelID);
+                }
+
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
-                table_list_insert(&local_table);
-
-                printf("CREATEFRAME\n");
-                printf("PUSHFRAME\n");
-                printf("LABEL WHILE_%d\n", labelID);
                 depth++;
                 CALL_RULE(stat, token);
-                depth--;
-                // WHILE CONDITION
-                printf("POPFRAME\n");
+                printf("JUMP WHILE_%d\n", labelID);
+                printf("LABEL WHILE_END_%d\n", labelID);
                 labelID++;
                 return stat(token);
 
@@ -438,7 +444,7 @@ int stat(token_t *token){
                 printf("RETURN\n");
                 return stat(token);
 
-            case KW_END: //<stat> -> end
+            case KW_END: case KW_ELSE: //<stat> -> end; <stat> -> else
                 table_list_delete(&local_table);
                 if(depth == 0){
                     for(int i = 0; i < (int)strlen(currFunc->types); i++)

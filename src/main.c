@@ -11,6 +11,7 @@
 #include "parser.h"
 #include "scanner.h"
 #include "expression.h"
+#include "symtable.h"
 
 ErrCode printError(ErrCode err, token_t *token){
     switch(err){
@@ -45,6 +46,6 @@ ErrCode printError(ErrCode err, token_t *token){
 
 int main(void){
     token_t token;
-    get_token(&token);
+    NEXT_TOKEN(&token);
     return printError(prog(&token), &token);
 }
