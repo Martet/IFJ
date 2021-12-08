@@ -267,7 +267,7 @@ int args_n(token_t *token, tokenList_t **list);
  * @param token Dalsi token pro zpracovani
  * @return int Chybovy kod
  */
-int stat(token_t *token);
+int stat(token_t *token, int labelID);
 
 /**
  * @brief Implementace pravidla <IDs>
