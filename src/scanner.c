@@ -609,7 +609,7 @@ int get_token(token_t *token){
 					return 1;
 				}
 			
-			case STRING_BACKSLASH_ASCII:
+			case STRING_BACKSLASH_ASCII:{
 				char *str = malloc(3 + 1);
 				for(int i = 0; i < 3; i++){
 					if(get_char_type(curr_char) == 1){
@@ -633,6 +633,7 @@ int get_token(token_t *token){
 				token_data_append(token, finalChar);
 				state = STRING_VALID;
 				break;
+			}
 			
 			case STRING_BACKSLASH_CORRECT:
 				if(curr_char == '"'){
