@@ -12,7 +12,6 @@
 
 typedef struct TableItem {
     bool defined;
-    bool isFunc;
     char *types;
     char *params;
     char *key;

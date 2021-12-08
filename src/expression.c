@@ -168,25 +168,28 @@ int reduce(Stack* stack, IdentType typevar, char *type)
     {
         char* data = stack->top->data;
         tableItem_t *item;
+        double num;
 
         switch(stack->top->type){
             case I_ID:
                 item = table_search_all(local_table, data);
                 if(!item)
                     return ERR_SEM_DEF;
-                printf("PUSHS LF@%s_%d\n", item->key, item->id);
+                printf("PUSHS LF@%s$%d\n", item->key, item->id);
                 *type = item->types[0];
                 break;
             case I_NUMBER:
-                printf("PUSHS float@%s\n", data); //TODO PRINT IN CORRECT FORMAT
+                num = strtod(data, NULL);
+                printf("PUSHS float@%a\n", num);
                 *type = 'N';
                 break;
             case I_STRING:
-                printf("PUSHS string@%s\n", data);
+                printf("PUSHS string@");
+                print_ifjstring(data);
                 *type = 'S';
                 break;
             case I_INTEGER:
-                printf("PUSHS int@%s\n", data); //maybe print correct format
+                printf("PUSHS int@%s\n", data);
                 *type = 'I';
                 break;
             case I_NULL:

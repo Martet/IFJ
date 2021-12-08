@@ -156,6 +156,13 @@ itemList_t *list_init();
 void list_append(itemList_t *list, tableItem_t *item);
 
 /**
+ * @brief Tisk stringu podle formatu pro ifjcode
+ * 
+ * @param str string pro vytisteni
+ */
+void print_ifjstring(char *str);
+
+/**
  * @brief Implementace pravidla <prog>, startovni bod parseru
  * 
  * @param token Dalsi token pro zpracovani
