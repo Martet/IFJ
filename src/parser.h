@@ -33,6 +33,11 @@ typedef struct ItemList {
     tableItem_t *item;
 } itemList_t;
 
+typedef struct TokenList {
+    struct TokenList *next;
+    token_t *item;
+} tokenList_t;
+
 tableItem_t *global_table;
 tableList_t *local_table;
 
@@ -233,18 +238,19 @@ int types_n(token_t *token, bool *empty);
  * @brief Implementace pravidla <args>
  * 
  * @param token Dalsi token pro zpracovani
+ * @param list list tokenu pro pushnuti
  * @return int Chybovy kod
  */
-int args(token_t *token);
+int args(token_t *token, tokenList_t **list);
 
 /**
  * @brief Implementace pravidla <args_n>
  * 
  * @param token Dalsi token pro zpracovani
- * @param types Ukazatel na dynamicky string pro kontrolu parametru
+ * @param list list tokenu pro pushnuti
  * @return int Chybovy kod
  */
-int args_n(token_t *token, char **types);
+int args_n(token_t *token, tokenList_t **list);
 
 /**
  * @brief Implementace pravidla <stat>

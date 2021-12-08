@@ -35,6 +35,8 @@ void string_append(char **str, char c){
 }
 
 int check_types(char *types1, char *types2){
+    if(types1[0] == 'w')
+        return 0;
     int len1 = strlen(types1), len2 = strlen(types2);
     if(len1 != len2)
         return 1;
@@ -68,6 +70,25 @@ void list_append(itemList_t *list, tableItem_t *item){
             list->item = item;
         }
     }
+}
+
+tokenList_t *t_list_init(){
+    tokenList_t *list = malloc(sizeof(tokenList_t));
+    if(!list) 
+        exit(99);
+    list->item = NULL;
+    list->next = NULL;
+    return list;
+}
+
+void t_list_append(tokenList_t **list, token_t *item){
+    token_t *newToken = malloc(sizeof(token_t));
+    if(!newToken) exit(99);
+    memcpy(newToken, item, sizeof(token_t));
+    tokenList_t *newList = t_list_init();
+    newList->item = newToken;
+    newList->next = *list;
+    *list = newList;
 }
 
 void print_ifjstring(char *str){
@@ -170,11 +191,12 @@ int prog(token_t *token){
                 return ERR_SEM_DEF;
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
-            CALL_RULE(args, token);
+            tokenList_t *list = t_list_init();
+            CALL_RULE(args, token, &list);
             
             if(!callList)
                 callList = list_init();
-            list_append(callList, tItem);
+            list_append(callList, tItem); //TODO SOMETHIGN WITH THIS SHIT
 
             return prog(token);
 
@@ -290,29 +312,27 @@ int types_n(token_t *token, bool *empty){
     }
 }
 
-int args(token_t *token){
+int args(token_t *token, tokenList_t **list){
     PRINT_DEBUG;
     if(token->type == T_PAR_R) //<args> -> )
         return ERR_OK;
     else{ //<args> -> <term> <args_n>
-        char *types = string_create(1);
-        CALL_RULE(term, token, &types);
-        return args_n(token, &types);
+        t_list_append(list, token);
+        NEXT_TOKEN(token);
+        return args_n(token, list);
     }
 }
 
-int args_n(token_t *token, char **types){
+int args_n(token_t *token, tokenList_t **list){
     PRINT_DEBUG;
     if(token->type == T_PAR_R){ //<args_n> -> )
-        if(check_types(tItem->params, *types))
-            return ERR_SEM_PARAM;
-        free(*types);
         return ERR_OK;
     }
     else if (token->type == T_COMMA){ //<args_n> -> , <term> <args_n>
         NEXT_TOKEN(token);
-        CALL_RULE(term, token, types);
-        return args_n(token, types);
+        t_list_append(list, token);
+        NEXT_TOKEN(token);
+        return args_n(token, list);
     }
     else
         return ERR_PARSE;
@@ -343,7 +363,20 @@ int stat(token_t *token){
         else{ //<stat> -> ID ( <args> <stat>
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
-            CALL_RULE(args, token);
+
+            tokenList_t *list = t_list_init();
+            CALL_RULE(args, token, &list);
+
+            char *params = string_create(1);
+            while(list && list->item){
+                int err = term(list->item, &params);
+                if(err) return err;
+                list = list->next;
+            }
+            if(check_types(tItem->params, params))
+                return ERR_SEM_PARAM;
+            if(tItem->params[0] == 'w')
+                printf("PUSHS int@%ld\n", strlen(params));
             
             printf("CALL %s\n", tItem->key);
 
@@ -355,6 +388,8 @@ int stat(token_t *token){
         switch(token->keyword){
             case KW_LOCAL:
                 NEXT_CHECK_TYPE(token, T_ID);
+                if(table_search(global_table, token->data))
+                    return ERR_SEM_DEF;
                 if(table_search_first(local_table, token->data))
                     return ERR_SEM_DEF;
                 tItem = table_insert(&(local_table->table), token->data);
@@ -373,9 +408,22 @@ int stat(token_t *token){
                         if((tItem = table_search(global_table, token->data))){ //<stat> -> local ID : <type> = ID ( <args> <stat>
                             NEXT_CHECK_TYPE(token, T_PAR_L);
                             NEXT_TOKEN(token);
-                            CALL_RULE(args, token);
+                            
+                            tokenList_t *list = t_list_init();
+                            CALL_RULE(args, token, &list);
 
-                            printf("CALL %s\n", tItem->key);
+                            char *params = string_create(1);
+                            while(list && list->item){
+                                int err = term(list->item, &params);
+                                if(err) return err;
+                                list = list->next;
+                            }
+                            if(check_types(tItem->params, params))
+                                return ERR_SEM_PARAM;
+                            if(check_types(item->params, tItem->types))
+                                return ERR_SEM_ASSIGN;
+
+                            printf("CALL %s\n", tItem->key); //TODO CHECK TYPES COUNT IS 1
                             printf("POPS LF%s$%d\n", item->key, item->id);
                         }
                         else if((tItem = table_search_all(local_table, token->data))){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
@@ -458,7 +506,7 @@ int stat(token_t *token){
                 if(strlen(types) > strlen(currFunc->types))
                     return ERR_SEM_PARAM;
                 printf("POPFRAME\n");
-                printf("RETURN\n");
+                printf("RETURN\n\n");
                 return stat(token);
 
             case KW_END: case KW_ELSE: //<stat> -> end; <stat> -> else
@@ -467,7 +515,7 @@ int stat(token_t *token){
                     for(int i = 0; i < (int)strlen(currFunc->types); i++)
                         printf("PUSHS nil@nil\n");
                     printf("POPFRAME\n");
-                    printf("RETURN\n");
+                    printf("RETURN\n\n");
                 }
                 else
                     depth--;
@@ -519,7 +567,20 @@ int EXPRs(token_t *token, bool *empty, char **types){
         if(tItem){ ////<EXPRs> -> ID ( <args>
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
-            CALL_RULE(args, token);
+            
+            tokenList_t *list = t_list_init();
+            CALL_RULE(args, token, &list);
+
+            char *params = string_create(1);
+            while(list && list->item){
+                int err = term(list->item, &params);
+                if(err) return err;
+                list = list->next;
+            }
+            if(check_types(tItem->params, params))
+                return ERR_SEM_PARAM;
+            
+
             printf("CALL %s\n", tItem->key);
             *types = tItem->types;
             *empty = true;
