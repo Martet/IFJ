@@ -44,12 +44,27 @@ ErrCode printError(ErrCode err, token_t *token){
     }
 }
 
+void setup_func(char *name, char *params, char *types){
+    tableItem_t *item = table_insert(&global_table, name);
+    item->defined = true;
+    item->params = params;
+    item->types = types;
+}
+
 int main(void){
     printf(".IFJcode21\n");
     printf("DEFVAR GF@op1\n");
     printf("DEFVAR GF@op2\n");
     printf("DEFVAR GF@op3\n");
     printf("JUMP $CALLS$\n");
+
+    setup_func("write", "w", "");
+    setup_func("reads", "", "S");
+    setup_func("readi", "", "I");
+    setup_func("readn", "", "N");
+    setup_func("substr", "SNN", "S");
+    setup_func("ord", "SI", "I");
+    setup_func("chr", "I", "S");
 
     token_t token;
     NEXT_TOKEN(&token);

@@ -81,7 +81,6 @@ int prog(token_t *token){
                         return ERR_SEM_DEF;
                     tItem = table_insert(&global_table, token->data);
                     tItem->defined = false;
-                    tItem->isFunc = true;
                     tItem->params = string_create(1);
                     tItem->types = string_create(1);
                     NEXT_CHECK_TYPE(token, T_COLON);
@@ -97,7 +96,7 @@ int prog(token_t *token){
                     char *params, *types;
                     bool checkTypes = false;
                     if((tItem = table_search(global_table, token->data))){
-                        if(tItem->defined || !tItem->isFunc) //funkce jiz byla definovana, chyba
+                        if(tItem->defined)
                             return ERR_SEM_DEF;
                         tItem->defined = true;
                         checkTypes = true;
@@ -111,7 +110,6 @@ int prog(token_t *token){
                     else{
                         tItem = table_insert(&global_table, token->data);
                         tItem->defined = true;
-                        tItem->isFunc = true;
                         tItem->params = string_create(1);
                         tItem->types = string_create(1);
                     }
@@ -157,7 +155,7 @@ int prog(token_t *token){
             break;
 
         case T_ID: //<prog> -> ID ( <args> <prog>
-            if(!(tItem = table_search(global_table, token->data)) || !tItem->isFunc)
+            if(!(tItem = table_search(global_table, token->data)))
                 return ERR_SEM_DEF;
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
@@ -214,7 +212,6 @@ int fdef_args(token_t *token, itemList_t *args){
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
         tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
         tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
-        tItem->isFunc = false;
         tItem->types = string_create(1);
         list_append(args, tItem);
         NEXT_CHECK_TYPE(token, T_COLON);
@@ -237,7 +234,6 @@ int fdef_args_n(token_t *token, itemList_t *args){
         tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
         NEXT_CHECK_TYPE(token, T_ID);
         tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
-        tItem->isFunc = false;
         tItem->types = string_create(1);
         list_append(args, tItem);
         NEXT_CHECK_TYPE(token, T_COLON);
@@ -351,7 +347,6 @@ int stat(token_t *token){
                 if(table_search_first(local_table, token->data))
                     return ERR_SEM_DEF;
                 tItem = table_insert(&(local_table->table), token->data);
-                tItem->isFunc = false;
                 tItem->types = string_create(1);
                 tItem->id = depth;
                 NEXT_CHECK_TYPE(token, T_COLON);
