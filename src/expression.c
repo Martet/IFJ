@@ -392,8 +392,8 @@ int solvedExpression(token_t *token, char *type)
         {
             if (typevar != I_STRING)
             {
-                printf("%d",typevar);
-                printf("hellu");
+                //printf("%d",typevar);
+                //printf("hellu");
                 return 6;
             }
             
@@ -425,11 +425,7 @@ int solvedExpression(token_t *token, char *type)
             break;
         }
 
-        if (token->type == T_KW && token->keyword == KW_NIL)
-        {
-            
-        }
-        
+
 
         if (token->type == T_EOL || token->type == T_EOF || token->type == T_COMMA)
         {
