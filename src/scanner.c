@@ -627,6 +627,10 @@ int get_token(token_t *token){
 				str[3] = '\0';
 				long value = strtol(str, NULL,10);
 				int res = (int)value;
+				// Ascii hodnota pouze 1-255
+				if(res < 1 || res > 255){
+					return 1;	
+				}
 				// Prevedu integer hodnotu ascii znaku na ascii znak
 				char finalChar = res;
 				free(str);
