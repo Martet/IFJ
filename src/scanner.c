@@ -560,7 +560,10 @@ int get_token(token_t *token){
 					return 1;
 				}
 				if((curr_char >= ' ') && (curr_char != '"')){
+					if(curr_char != '\\')
 					token_data_append(token, curr_char);
+					else
+						ungetc(curr_char, stdin);
 					state = STRING_VALID;
 					break;
 				}
