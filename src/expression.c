@@ -14,7 +14,6 @@
 #include "symtable.h"
 
 #define TABLE_SIZE 9
-bool boolen;
 
 const char Precedence_table[TABLE_SIZE][TABLE_SIZE] = {
 //  |+-|*///| ( | ) | i | $ |<>  |.. |#|
@@ -86,7 +85,6 @@ int get_index_to_table(TokenType type)
     case T_EOL:
         return 5;
     case T_LESS: case T_LESS_EQ: case T_GREATER: case T_GREATER_EQ: case T_EQ: case T_EQ_NIL:
-        boolen = true;
         return 6;
     case T_HASH:
         return 8;
@@ -176,7 +174,7 @@ int reduce(Stack* stack, IdentType typevar, char *type)
                 item = table_search_all(local_table, data);
                 if(!item)
                     return ERR_SEM_DEF;
-                printf("PUSHS LF@%s\n", data);
+                printf("PUSHS LF@%s_%d\n", item->key, item->id);
                 *type = item->types[0];
                 break;
             case I_NUMBER:

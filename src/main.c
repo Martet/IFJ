@@ -45,6 +45,12 @@ ErrCode printError(ErrCode err, token_t *token){
 }
 
 int main(void){
+    printf(".IFJcode21\n");
+    printf("DEFVAR GF@op1\n");
+    printf("DEFVAR GF@op2\n");
+    printf("DEFVAR GF@op3\n");
+    printf("JUMP $CALLS$\n");
+
     token_t token;
     NEXT_TOKEN(&token);
     return printError(prog(&token), &token);
