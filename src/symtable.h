@@ -16,6 +16,7 @@ typedef struct TableItem {
     char *types;
     char *params;
     char *key;
+    int id;
     struct TableItem *lptr; 
     struct TableItem *rptr;
 } tableItem_t;

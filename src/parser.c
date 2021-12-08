@@ -14,6 +14,7 @@
 #include "expression.h"
 
 tableItem_t *tItem, *currFunc;
+itemList_t *callList;
 int labelID, depth;
 
 char *string_create(int size){
@@ -162,11 +163,20 @@ int prog(token_t *token){
             NEXT_TOKEN(token);
             CALL_RULE(args, token);
             
-            printf("CALL %s\n", tItem->key);
+            if(!callList)
+                callList = list_init();
+            list_append(callList, tItem);
 
             return prog(token);
 
         case T_EOF:
+            printf("LABEL $CALLS$\n");
+            while(callList){
+                itemList_t *item = callList;
+                callList = callList->next;
+                printf("CALL %s\n", item->item->key);
+                free(item);
+            }
             return ERR_OK;
 
         default:
@@ -317,7 +327,7 @@ int stat(token_t *token){
             while(list){
                 if(list->item->types[0] != types[i] && types[i] != 'n')
                     return ERR_SEM_ASSIGN; //TODO INT TO NUM CONVERSION
-                printf("POPS LF@%s\n", list->item->key);
+                printf("POPS LF@%s_%d\n", list->item->key, list->item->id);
                 i++;
                 list = list->next;
             }
@@ -343,12 +353,13 @@ int stat(token_t *token){
                 tItem = table_insert(&(local_table->table), token->data);
                 tItem->isFunc = false;
                 tItem->types = string_create(1);
+                tItem->id = depth;
                 NEXT_CHECK_TYPE(token, T_COLON);
                 NEXT_TOKEN(token);
                 CALL_RULE(type, token, false);
                 
                 tableItem_t *item = tItem;
-                printf("DEFVAR LF@%s_%d\n", item->key, depth);
+                printf("DEFVAR LF@%s_%d\n", item->key, item->id);
 
                 if(token->type == T_ASSIGN){
                     NEXT_TOKEN(token);
@@ -359,14 +370,14 @@ int stat(token_t *token){
                             CALL_RULE(args, token);
 
                             printf("CALL %s\n", tItem->key);
-                            printf("POPS LF%s_%d\n", item->key, depth);
+                            printf("POPS LF%s_%d\n", item->key, item->id);
                         }
                         else if((tItem = table_search_all(local_table, token->data))){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
                             char exprType;
                             CALL_EXPR(token, &exprType);
                             if(item->types[0] != exprType && exprType != 'n')
                                 return ERR_SEM_PARAM;
-                            printf("POPS LF@%s_%d\n", item->key, depth);
+                            printf("POPS LF@%s_%d\n", item->key, item->id);
                         }
                         else
                             return ERR_SEM_DEF;
@@ -376,7 +387,7 @@ int stat(token_t *token){
                         CALL_EXPR(token, &exprType);
                         if(item->types[0] != exprType && exprType != 'n')
                             return ERR_SEM_PARAM;
-                        printf("POPS LF@%s_%d\n", item->key, depth);
+                        printf("POPS LF@%s_%d\n", item->key, item->id);
                     }
                 }
 
@@ -576,7 +587,7 @@ int term(token_t *token, char **types){
             if(!item)
                 return ERR_SEM_DEF;
             string_append(types, item->types[0]);
-            printf("PUSHS LF@%s\n", item->key);
+            printf("PUSHS LF@%s_%d\n", item->key, item->id);
             return ERR_OK;
         case T_NUMBER:
             string_append(types, 'N');
