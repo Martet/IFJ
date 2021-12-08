@@ -169,7 +169,7 @@ int reduce(Stack* stack, IdentType typevar, char *type)
         char* data = stack->top->data;
         tableItem_t *item;
         double num;
-
+        typevar = stack->top->type;
         switch(stack->top->type){
             case I_ID:
                 item = table_search_all(local_table, data);
@@ -201,6 +201,7 @@ int reduce(Stack* stack, IdentType typevar, char *type)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack,I_NON_TERM,data);
+
         //printf("E: %s\n", data);
     }
     else if(cnt == 2 && stack->top->type == I_NON_TERM && stack->top->next->type == I_HASH)
@@ -220,7 +221,8 @@ int reduce(Stack* stack, IdentType typevar, char *type)
         printf("POPS GF@op2\n");
         printf("STRLEN GF@op1 GF@op2\n"); //TODO PRINT CORRECT STR FORMAT
         printf("PUSHS GF@op1\n");
-        *type = 'N';
+        *type = 'I';
+        typevar = I_INTEGER;
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type >= I_PLUS && stack->top->next->type <= I_DIVIDE_INT && stack->top->next->next->type == I_NON_TERM)
     {
@@ -374,6 +376,7 @@ int solvedExpression(token_t *token, char *type)
                 // printf("d");
                 return 6;
             }
+            typevar = I_STRING;
             
         }
         if (s.top->type == I_STRING && s.top->next->next->type != I_HASH)
@@ -385,7 +388,16 @@ int solvedExpression(token_t *token, char *type)
             }
         }
         
-        
+        if (token->type == T_CONCAT)
+        {
+            if (typevar != I_STRING)
+            {
+                printf("%d",typevar);
+                printf("hellu");
+                return 6;
+            }
+            
+        }
         if (s.top->type != I_NON_TERM)
         {
             if (s.top->type == I_NUMBER || s.top->type == I_DIVIDE || typevar == I_NUMBER )
@@ -401,23 +413,20 @@ int solvedExpression(token_t *token, char *type)
                 typevar = I_STRING;
             }
          }
+
         if(token->type == T_ID && (s.top->type == I_ID || s.top->type== I_NON_TERM || s.top->type == I_STRING || s.top->type == I_NUMBER || s.top->type == I_INTEGER)) 
         {
             // Stack_Print(&s);
-            // printf("picitoje");
+             //printf("picitoje");
             break;
         }
-        if (token->type == T_KW && (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_NIL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE))
+        if (token->type == T_KW && (token->keyword == KW_DO || token->keyword == KW_THEN || token->keyword == KW_END || token->keyword == KW_FUNCTION || token->keyword == KW_GLOBAL || token->keyword == KW_IF || token->keyword == KW_LOCAL || token->keyword == KW_REQUIRE || token->keyword == KW_RETURN || token->keyword == KW_WHILE || token->keyword == KW_ELSE))
         {
             break;
         }
-        if (token->type == T_CONCAT)
+
+        if (token->type == T_KW && token->keyword == KW_NIL)
         {
-            if (typevar != I_STRING)
-            {
-                // printf("hellu");
-                return 6;
-            }
             
         }
         
