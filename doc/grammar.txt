@@ -29,6 +29,7 @@
 <stat> -> while EXPR do <stat> <stat>
 <stat> -> return <EXPRs> <stat>
 <stat> -> end
+<stat> -> else
 <IDs> -> ID <IDs_n>
 <IDs_n> -> , ID <IDs_n>
 <IDs_n> -> =

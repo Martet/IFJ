@@ -191,6 +191,10 @@ int reduce(Stack* stack, IdentType typevar, char *type)
                 printf("PUSHS int@%s\n", data); //maybe print correct format
                 *type = 'I';
                 break;
+            case I_NULL:
+                printf("PUSHS nil@nil\n");
+                *type = 'n';
+                break;
         }
 
         Stack_Pop(stack);
@@ -212,7 +216,8 @@ int reduce(Stack* stack, IdentType typevar, char *type)
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
         
-        printf("STRLEN GF@op1 str@%s\n", data); //TODO PRINT CORRECT STR FORMAT
+        printf("POPS GF@op2\n");
+        printf("STRLEN GF@op1 GF@op2\n"); //TODO PRINT CORRECT STR FORMAT
         printf("PUSHS GF@op1\n");
         *type = 'N';
     }
@@ -255,15 +260,53 @@ int reduce(Stack* stack, IdentType typevar, char *type)
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type > I_DOLAR && stack->top->next->type < I_CONCAT && stack->top->next->next->type == I_NON_TERM)
     {
-        char* data = NULL;
+        switch(stack->top->next->type){
+            case I_GREATER:
+                printf("GTS\n");
+                break;
+            case I_LESS:
+                printf("LTS\n");
+                break;
+            case I_EQ:
+                printf("EQS\n");
+                break;
+            case I_EQ_NIL:
+                printf("EQS\n");
+                printf("NOTS\n");
+                break;
+            case I_LESS_EQ:
+                printf("POPS GF@op2\n");
+                printf("POPS GF@op1\n");
+                printf("PUSHS GF@op1\n");
+                printf("PUSHS GF@op2\n");
+                printf("EQS\n");
+                printf("POPS GF@op3\n");
+                printf("PUSHS GF@op1\n");
+                printf("PUSHS GF@op2\n");
+                printf("LTS\n");
+                printf("PUSHS GF@op3\n");
+                printf("ORS\n");
+                break;
+            case I_GREATER_EQ:
+                printf("POPS GF@op2\n");
+                printf("POPS GF@op1\n");
+                printf("PUSHS GF@op1\n");
+                printf("PUSHS GF@op2\n");
+                printf("EQS\n");
+                printf("POPS GF@op3\n");
+                printf("PUSHS GF@op1\n");
+                printf("PUSHS GF@op2\n");
+                printf("GTS\n");
+                printf("PUSHS GF@op3\n");
+                printf("ORS\n");
+                break;
+        }
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Pop(stack);
-        Stack_Push(stack, I_NON_TERM, data);
-        printf("E relace.type E --> E: %s\n", stack->top->next->data);
-
-        //generace operace stack->top->next->data
+        Stack_Push(stack, I_NON_TERM, NULL);
+        *type = 'b';
     }
     else if (cnt == 3 && stack->top->type == I_NON_TERM && stack->top->next->type == I_CONCAT && stack->top->next->next->type == I_NON_TERM)
     {
@@ -279,7 +322,10 @@ int reduce(Stack* stack, IdentType typevar, char *type)
         Stack_Pop(stack);
         Stack_Pop(stack);
         Stack_Push(stack, I_NON_TERM, data);
-        printf("..\n");
+        printf("POPS GF@op2\n");
+        printf("POPS GF@op1\n");
+        printf("CONCAT GF@op1 GF@op1 GF@op2\n"); //HOPE IT WORKS LIKE THIS
+        printf("PUSHS GF@op1\n");
         //printf("E teckatecka E --> E: %s\n", stack->top->next->data);
         //generace operace stack->top->next->data
     }
