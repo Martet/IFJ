@@ -700,7 +700,7 @@ int get_token(token_t *token){
 						curr_char = getc(stdin);
 						if(curr_char == EOF){
 							token->type = T_EOF;
-							return 0;
+							return 1;
 						}
 						if(curr_char == ']'){
 							state = START;
@@ -709,7 +709,7 @@ int get_token(token_t *token){
 					}
 					if(curr_char == EOF){
 						token->type = T_EOF;
-						return 0;
+						return 1;
 					}
 					curr_char = getc(stdin);
 				}
