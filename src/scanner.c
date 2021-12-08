@@ -244,7 +244,7 @@ int get_token(token_t *token){
 						ungetc(curr_char, stdin);
 						break;
 					default:
-						if(get_char_type(curr_char) == 2){
+						if(get_char_type(curr_char) == 2 || curr_char == '_'){
 							state = ID_OR_KEYWORD;
 							token_data_init(token);
 							ungetc(curr_char, stdin);
