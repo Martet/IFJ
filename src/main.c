@@ -188,7 +188,8 @@ void print_builtin(){
         "LABEL chr$isnil\n"
         "EXIT int@8\n"
         "POPFRAME\n"
-        "RETURN\n");
+        "RETURN\n"
+        "\n#################################################\n\n");
 }
 
 int main(void){

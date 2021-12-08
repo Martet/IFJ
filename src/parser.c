@@ -15,7 +15,7 @@
 
 tableItem_t *tItem, *currFunc;
 itemList_t *callList;
-int labelID, depth;
+int whileID, ifID, depth;
 
 char *string_create(int size){
     char *str = malloc(size);
@@ -106,6 +106,26 @@ void print_ifjstring(char *str){
     printf("\n");
 }
 
+void print_var(tableItem_t *item){
+    printf("LF@%s", item->key);
+    if(item->id != -1)
+        printf("$%d", item->id);
+    printf("\n");
+}
+
+char *strrev(char *str)
+{
+      char *p1, *p2;
+      if (*str == 0)
+            return str;
+      for (p1 = str, p2 = str + strlen(str) - 1; p2 > p1; ++p1, --p2){
+            *p1 ^= *p2;
+            *p2 ^= *p1;
+            *p1 ^= *p2;
+      }
+      return str;
+}
+
 int prog(token_t *token){
     PRINT_DEBUG;
     switch(token->type){
@@ -181,7 +201,7 @@ int prog(token_t *token){
                 case KW_REQUIRE: //<prog> -> require STRING <prog>
                     NEXT_CHECK_TYPE(token, T_STRING);
                     if(strcmp(token->data, "ifj21"))
-                        return ERR_PARSE;
+                        return ERR_SEM_OTHER;
                     NEXT_TOKEN(token);
                     return prog(token);
 
@@ -192,7 +212,7 @@ int prog(token_t *token){
 
         case T_ID: //<prog> -> ID ( <args> <prog>
             if(!(tItem = table_search(global_table, token->data)))
-                return ERR_SEM_DEF;
+                return ERR_PARSE;
             NEXT_CHECK_TYPE(token, T_PAR_L);
             NEXT_TOKEN(token);
             tokenList_t *list = t_list_init();
@@ -216,6 +236,8 @@ int prog(token_t *token){
                     if(err) return err;
                     item->args = item->args->next;
                 }
+                params = strrev(params);
+                
                 if(check_types(tItem->params, params))
                     return ERR_SEM_PARAM;
                 if(tItem->params[0] == 'w')
@@ -259,8 +281,11 @@ int fdef_args(token_t *token, itemList_t *args){
         return ERR_OK;
     else if(token->type == T_ID){ //<fdef_args> -> ID : <type> <fdef_args_n>
         tableItem_t *func = tItem; //k itemu pro funkci se budeme vracet
-        tItem = table_insert(&(local_table->table), token->data); //TODO CHECK JESTLI SE PARAMETR NEOPAKUJE
+        if(table_search(local_table->table, token->data))
+            return ERR_SEM_DEF;
+        tItem = table_insert(&(local_table->table), token->data);
         tItem->types = string_create(1);
+        tItem->id = -1;
         list_append(args, tItem, NULL);
         NEXT_CHECK_TYPE(token, T_COLON);
         NEXT_TOKEN(token);
@@ -368,8 +393,9 @@ int stat(token_t *token){
                 return ERR_SEM_ASSIGN; //MAYBE??
             while(list){
                 if(list->item->types[0] != types[i] && types[i] != 'n')
-                    return ERR_SEM_ASSIGN; //TODO INT TO NUM CONVERSION
-                printf("POPS LF@%s$%d\n", list->item->key, list->item->id);
+                    return ERR_SEM_PARAM; //TODO INT TO NUM CONVERSION
+                printf("POPS ");
+                print_var(list->item);
                 i++;
                 list = list->next;
             }
@@ -415,7 +441,8 @@ int stat(token_t *token){
                 CALL_RULE(type, token, false);
                 
                 tableItem_t *item = tItem;
-                printf("DEFVAR LF@%s$%d\n", item->key, item->id);
+                printf("DEFVAR ");
+                print_var(item);
 
                 if(token->type == T_ASSIGN){
                     NEXT_TOKEN(token);
@@ -435,18 +462,20 @@ int stat(token_t *token){
                             }
                             if(check_types(tItem->params, params))
                                 return ERR_SEM_PARAM;
-                            if(check_types(item->params, tItem->types))
+                            if(check_types(item->types, tItem->types))
                                 return ERR_SEM_ASSIGN;
 
                             printf("CALL %s\n", tItem->key); //TODO CHECK TYPES COUNT IS 1
-                            printf("POPS LF%s$%d\n", item->key, item->id);
+                            printf("POPS ");
+                            print_var(item);
                         }
                         else if((tItem = table_search_all(local_table, token->data))){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
                             char exprType;
                             CALL_EXPR(token, &exprType);
                             if(item->types[0] != exprType && exprType != 'n')
-                                return ERR_SEM_PARAM;
-                            printf("POPS LF@%s$%d\n", item->key, item->id);
+                                return ERR_SEM_ASSIGN;
+                            printf("POPS ");
+                            print_var(item);
                         }
                         else
                             return ERR_SEM_DEF;
@@ -455,8 +484,9 @@ int stat(token_t *token){
                         char exprType;
                         CALL_EXPR(token, &exprType);
                         if(item->types[0] != exprType && exprType != 'n')
-                            return ERR_SEM_PARAM;
-                        printf("POPS LF@%s$%d\n", item->key, item->id);
+                            return ERR_SEM_ASSIGN;
+                        printf("POPS ");
+                        print_var(item);
                     }
                 }
 
@@ -466,50 +496,54 @@ int stat(token_t *token){
                 NEXT_TOKEN(token);
                 CALL_EXPR(token, &exprType);
                 if(exprType == 'n'){
-                    printf("JUMP %s$ELSE$%d\n", currFunc->key, labelID);
+                    printf("JUMP %s$ELSE$%d\n", currFunc->key, ifID);
                 }
                 else if(exprType == 'b'){
                     printf("PUSHS bool@false\n");
-                    printf("JUMPIFEQS %s$ELSE$%d\n", currFunc->key, labelID);
+                    printf("JUMPIFEQS %s$ELSE$%d\n", currFunc->key, ifID);
                 }
 
                 CHECK_KW(token, KW_THEN);
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
                 
-                depth++;
+                depth++; ifID++;
                 CALL_RULE(stat, token);
-                printf("JUMP %s$ENDIF$%d\n", currFunc->key, labelID);
+                ifID--;
+                printf("JUMP %s$ENDIF$%d\n", currFunc->key, ifID);
 
                 table_list_insert(&local_table);
 
-                printf("LABEL %s$ELSE$%d\n", currFunc->key, labelID);
-                depth++;
+                printf("LABEL %s$ELSE$%d\n", currFunc->key, ifID);
+                depth++; ifID++;
                 CALL_RULE(stat, token);
-                printf("LABEL %s$ENDIF$%d\n", currFunc->key, labelID++);
+                ifID--;
+                printf("LABEL %s$ENDIF$%d\n", currFunc->key, ifID);
 
                 return stat(token);
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
-                printf("LABEL %s$WHILE$%d\n", currFunc->key, labelID);
+                printf("LABEL %s$WHILE$%d\n", currFunc->key, whileID);
                 CALL_EXPR(token, &exprType);
                 if(exprType == 'n'){
-                    printf("JUMP %s$WHILE_END$%d\n", currFunc->key, labelID);
+                    printf("JUMP %s$WHILE_END$%d\n", currFunc->key, whileID);
                 }
                 else if(exprType == 'b'){
                     printf("PUSHS bool@false\n");
-                    printf("JUMPIFEQS %s$WHILE_END$%d\n", currFunc->key, labelID);
+                    printf("JUMPIFEQS %s$WHILE_END$%d\n", currFunc->key, whileID);
                 }
-
+                whileID++;
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
                 depth++;
                 CALL_RULE(stat, token);
-                printf("JUMP %s$WHILE$%d\n", currFunc->key, labelID);
-                printf("LABEL %s$WHILE_END$%d\n", currFunc->key, labelID);
-                labelID++;
+
+                whileID--;
+                printf("JUMP %s$WHILE$%d\n", currFunc->key, whileID);
+                printf("LABEL %s$WHILE_END$%d\n", currFunc->key, whileID);
+
                 return stat(token);
 
             case KW_RETURN: //<stat> -> return <EXPRs> <stat>
@@ -669,7 +703,8 @@ int term(token_t *token, char **types){
             if(!item)
                 return ERR_SEM_DEF;
             string_append(types, item->types[0]);
-            printf("PUSHS LF@%s$%d\n", item->key, item->id);
+            printf("PUSHS ");
+            print_var(item);
             return ERR_OK;
         case T_NUMBER:
             string_append(types, 'N');
