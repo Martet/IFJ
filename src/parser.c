@@ -70,6 +70,17 @@ void list_append(itemList_t *list, tableItem_t *item){
     }
 }
 
+void print_ifjstring(char *str){
+    while(*str){
+        if(*str <= 32 || *str == 35 || *str == 92)
+            printf("\\%03d", (int)*str);
+        else
+            printf("%c", *str);
+        str++;
+    }
+    printf("\n");
+}
+
 int prog(token_t *token){
     PRINT_DEBUG;
     switch(token->type){
@@ -323,7 +334,7 @@ int stat(token_t *token){
             while(list){
                 if(list->item->types[0] != types[i] && types[i] != 'n')
                     return ERR_SEM_ASSIGN; //TODO INT TO NUM CONVERSION
-                printf("POPS LF@%s_%d\n", list->item->key, list->item->id);
+                printf("POPS LF@%s$%d\n", list->item->key, list->item->id);
                 i++;
                 list = list->next;
             }
@@ -354,7 +365,7 @@ int stat(token_t *token){
                 CALL_RULE(type, token, false);
                 
                 tableItem_t *item = tItem;
-                printf("DEFVAR LF@%s_%d\n", item->key, item->id);
+                printf("DEFVAR LF@%s$%d\n", item->key, item->id);
 
                 if(token->type == T_ASSIGN){
                     NEXT_TOKEN(token);
@@ -365,14 +376,14 @@ int stat(token_t *token){
                             CALL_RULE(args, token);
 
                             printf("CALL %s\n", tItem->key);
-                            printf("POPS LF%s_%d\n", item->key, item->id);
+                            printf("POPS LF%s$%d\n", item->key, item->id);
                         }
                         else if((tItem = table_search_all(local_table, token->data))){ //<stat> -> local ID : <type> = EXPR <stat> (starting with ID)
                             char exprType;
                             CALL_EXPR(token, &exprType);
                             if(item->types[0] != exprType && exprType != 'n')
                                 return ERR_SEM_PARAM;
-                            printf("POPS LF@%s_%d\n", item->key, item->id);
+                            printf("POPS LF@%s$%d\n", item->key, item->id);
                         }
                         else
                             return ERR_SEM_DEF;
@@ -382,7 +393,7 @@ int stat(token_t *token){
                         CALL_EXPR(token, &exprType);
                         if(item->types[0] != exprType && exprType != 'n')
                             return ERR_SEM_PARAM;
-                        printf("POPS LF@%s_%d\n", item->key, item->id);
+                        printf("POPS LF@%s$%d\n", item->key, item->id);
                     }
                 }
 
@@ -392,11 +403,11 @@ int stat(token_t *token){
                 NEXT_TOKEN(token);
                 CALL_EXPR(token, &exprType);
                 if(exprType == 'n'){
-                    printf("JUMP ELSE_%d\n", labelID);
+                    printf("JUMP ELSE$%d\n", labelID);
                 }
                 else if(exprType == 'b'){
                     printf("PUSHS bool@false\n");
-                    printf("JUMPIFEQS ELSE_%d\n", labelID);
+                    printf("JUMPIFEQS ELSE$%d\n", labelID);
                 }
 
                 CHECK_KW(token, KW_THEN);
@@ -405,36 +416,36 @@ int stat(token_t *token){
                 
                 depth++;
                 CALL_RULE(stat, token);
-                printf("JUMP ENDIF_%d\n", labelID);
+                printf("JUMP ENDIF$%d\n", labelID);
 
                 table_list_insert(&local_table);
 
-                printf("LABEL ELSE_%d\n", labelID);
+                printf("LABEL ELSE$%d\n", labelID);
                 depth++;
                 CALL_RULE(stat, token);
-                printf("LABEL ENDIF_%d\n", labelID++);
+                printf("LABEL ENDIF$%d\n", labelID++);
 
                 return stat(token);
 
             case KW_WHILE: //<stat> -> while EXPR do <stat> <stat>
                 NEXT_TOKEN(token);
                 table_list_insert(&local_table);
-                printf("LABEL WHILE_%d\n", labelID);
+                printf("LABEL WHILE$%d\n", labelID);
                 CALL_EXPR(token, &exprType);
                 if(exprType == 'n'){
-                    printf("JUMP WHILE_END_%d\n", labelID);
+                    printf("JUMP WHILE_END$%d\n", labelID);
                 }
                 else if(exprType == 'b'){
                     printf("PUSHS bool@false\n");
-                    printf("JUMPIFEQS WHILE_END_%d\n", labelID);
+                    printf("JUMPIFEQS WHILE_END$%d\n", labelID);
                 }
 
                 CHECK_KW(token, KW_DO);
                 NEXT_TOKEN(token);
                 depth++;
                 CALL_RULE(stat, token);
-                printf("JUMP WHILE_%d\n", labelID);
-                printf("LABEL WHILE_END_%d\n", labelID);
+                printf("JUMP WHILE$%d\n", labelID);
+                printf("LABEL WHILE_END$%d\n", labelID);
                 labelID++;
                 return stat(token);
 
@@ -582,7 +593,7 @@ int term(token_t *token, char **types){
             if(!item)
                 return ERR_SEM_DEF;
             string_append(types, item->types[0]);
-            printf("PUSHS LF@%s_%d\n", item->key, item->id);
+            printf("PUSHS LF@%s$%d\n", item->key, item->id);
             return ERR_OK;
         case T_NUMBER:
             string_append(types, 'N');
@@ -594,7 +605,8 @@ int term(token_t *token, char **types){
             return ERR_OK;
         case T_STRING:
             string_append(types, 'S');
-            printf("PUSHS string@%s\n", token->data); // TODO CONVERT TO IFJCODE STRING
+            printf("PUSHS string@");
+            print_ifjstring(token->data);
             return ERR_OK;
         case T_KW:
             if(token->keyword == KW_NIL){
