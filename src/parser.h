@@ -170,6 +170,13 @@ void list_append(itemList_t *list, tableItem_t *item, tokenList_t *args);
 void print_ifjstring(char *str);
 
 /**
+ * @brief Vystiske promennou ve spravnem tvaru
+ * 
+ * @param item promenna pro tisk
+ */
+void print_var(tableItem_t *item);
+
+/**
  * @brief Implementace pravidla <prog>, startovni bod parseru
  * 
  * @param token Dalsi token pro zpracovani
