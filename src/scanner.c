@@ -173,6 +173,8 @@ int get_token(token_t *token){
 		switch(state){
 			case START:
 				switch(curr_char){
+					case ' ': case '\t': case '\v': case '\f': case '\r':
+						break;
 					case EOF:
 						token->type = T_EOF;
 						return 0;
@@ -257,7 +259,7 @@ int get_token(token_t *token){
 						else {
 							// Nic jineho nelze - neni pravda lze whitespace
 							// Error
-							// return 1;
+							return 1;
 						}
 						break;
 				}
